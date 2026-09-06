@@ -17,17 +17,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Development-only account so the Admin dashboard can be reached
-        // before the Admin-driven "create admin account" feature exists.
-        User::firstOrCreate(
-            ['email' => 'admin@teamucreation.test'],
-            [
-                'name' => 'System Admin',
-                'phone' => '09000000000',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-            ]
-        );
+        // Bootstrap Admin account — see AdminSeeder for details. Kept as its
+        // own seeder (rather than inline here) so it can also be run on its
+        // own in production via:
+        //   php artisan db:seed --class=AdminSeeder --force
+        // without re-running the sample packages/testimonials below.
+        $this->call(AdminSeeder::class);
 
         // Sample event packages so a fresh install has something for clients to
         // browse and book right away, matching Team U Creation's typical services.

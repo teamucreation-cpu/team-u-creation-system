@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Send Notification')
-@section('page-title', 'Send Notification')
+@section('title', 'Send Reminders')
+@section('page-title', 'Send Reminders')
 
 @section('content')
 <div class="row justify-content-center">

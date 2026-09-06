@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'Notifications')
-@section('page-title', 'Notifications')
+@section('title', 'Remind Clients')
+@section('page-title', 'Remind Clients')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h5 class="mb-0">All Notifications</h5>
-    <a href="{{ route('admin.notifications.create') }}" class="btn btn-gold"><i class="fas fa-paper-plane me-1"></i> Send Notification</a>
+    <a href="{{ route('admin.notifications.create') }}" class="btn btn-gold"><i class="fas fa-paper-plane me-1"></i> Send Reminders</a>
 </div>
 
 <div class="table-custom">

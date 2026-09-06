@@ -76,20 +76,19 @@ class BookingController extends Controller
                     }
                 },
                 function ($attribute, $value, $fail) {
-                    // Only a confirmed (Approved) booking hard-blocks the date. A
-                    // Pending one does not — the Smart Date Selector already warns
-                    // the client and lets them proceed at their own risk, so the
-                    // server must honor that rather than rejecting the submission
-                    // out from under them. Two Pending bookings can coexist on the
-                    // same date; AdminBookingController::approve() is what actually
-                    // enforces exclusivity, refusing to approve one while another is
-                    // already Approved for that date.
+                    // Both Pending and Approved hard-block the date — a client
+                    // can only select and submit against a date that's
+                    // genuinely Available. The Smart Date Selector already
+                    // disables Pending/Booked cells client-side; this is the
+                    // server-side backstop for the same rule.
                     $existing = Booking::where('event_date', $value)
-                        ->where('status', 'Approved')
+                        ->whereIn('status', ['Pending', 'Approved'])
                         ->first();
 
                     if ($existing) {
-                        $fail("This date is already booked for a {$existing->event_type} event. Please select another date.");
+                        $fail($existing->status === 'Approved'
+                            ? "This date is already booked for a {$existing->event_type} event. Please select another date."
+                            : 'This date currently has a pending reservation. Please select another date.');
                     }
                 },
             ],
@@ -196,14 +195,17 @@ class BookingController extends Controller
                     }
                 },
                 function ($attribute, $value, $fail) use ($booking) {
-                    // See the identical comment in store() — only Approved blocks.
+                    // See the identical comment in store() — both Pending and
+                    // Approved block, excluding this booking's own current row.
                     $existing = Booking::where('event_date', $value)
-                        ->where('status', 'Approved')
+                        ->whereIn('status', ['Pending', 'Approved'])
                         ->where('id', '!=', $booking->id)
                         ->first();
 
                     if ($existing) {
-                        $fail("This date is already booked for a {$existing->event_type} event. Please select another date.");
+                        $fail($existing->status === 'Approved'
+                            ? "This date is already booked for a {$existing->event_type} event. Please select another date."
+                            : 'This date currently has a pending reservation. Please select another date.');
                     }
                 },
             ],

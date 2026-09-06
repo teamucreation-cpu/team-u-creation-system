@@ -2,9 +2,6 @@
 <a href="{{ route('client.dashboard') }}" class="{{ request()->routeIs('client.dashboard') ? 'active' : '' }}">
     <i class="fas fa-tachometer-alt"></i> Dashboard
 </a>
-<a href="{{ route('client.calendar.index') }}" class="{{ request()->routeIs('client.calendar.*') ? 'active' : '' }}">
-    <i class="fas fa-calendar-alt"></i> Calendar
-</a>
 
 <div class="nav-label">Events</div>
 <a href="{{ route('client.packages.index') }}" class="{{ request()->routeIs('client.packages.*') ? 'active' : '' }}">
