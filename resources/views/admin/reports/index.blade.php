@@ -12,22 +12,28 @@
 
 <div class="row g-3 mb-4">
     <div class="col-12 col-md-4">
+        <a href="{{ route('admin.reports.bookings', ['period' => $period]) }}" class="text-decoration-none">
         <div class="stat-card text-center">
             <div class="stat-value">{{ $stats['total_bookings_period'] }}</div>
             <div class="stat-label">Bookings (Period)</div>
         </div>
+        </a>
     </div>
     <div class="col-12 col-md-4">
+        <a href="{{ route('admin.reports.clients', ['period' => $period]) }}" class="text-decoration-none">
         <div class="stat-card text-center">
             <div class="stat-value">{{ $stats['new_clients_period'] }}</div>
             <div class="stat-label">New Clients</div>
         </div>
+        </a>
     </div>
     <div class="col-12 col-md-4">
+        <a href="{{ route('admin.reports.upcoming-events', ['period' => $period]) }}" class="text-decoration-none">
         <div class="stat-card text-center">
             <div class="stat-value">{{ $stats['upcoming_events'] }}</div>
             <div class="stat-label">Upcoming Events</div>
         </div>
+        </a>
     </div>
 </div>
 

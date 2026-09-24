@@ -13,9 +13,49 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
+    private const PERIODS = ['week', 'month', 'year'];
+
+    private function periodDates(string $period): array
+    {
+        $period = in_array($period, self::PERIODS, true) ? $period : 'month';
+        $startDate = match ($period) {
+            'week' => now()->startOfWeek(),
+            'month' => now()->startOfMonth(),
+            'year' => now()->startOfYear(),
+        };
+        $endDate = match ($period) {
+            'week' => now()->endOfWeek(),
+            'month' => now()->endOfMonth(),
+            'year' => now()->endOfYear(),
+        };
+
+        return [$period, $startDate, $endDate];
+    }
+
+    private function periodLabel(string $period): string
+    {
+        return match ($period) {
+            'week' => 'This Week',
+            'year' => 'This Year',
+            default => 'This Month',
+        };
+    }
+
     public function index(Request $request)
     {
         $period = $request->get('period', 'month');
+        $availableYears = Booking::selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->pluck('year')
+            ->map(fn ($year) => (int) $year)
+            ->push((int) now()->year)
+            ->unique()
+            ->sortDesc()
+            ->values();
+        $reportYear = (int) $request->get('year', now()->year);
+        if (! $availableYears->contains($reportYear)) {
+            $reportYear = (int) now()->year;
+        }
 
         $startDate = match($period) {
             'week' => now()->startOfWeek(),
@@ -30,7 +70,7 @@ class ReportController extends Controller
             ->pluck('count', 'status');
 
         $bookingsByMonth = Booking::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-            ->whereYear('created_at', now()->year)
+            ->whereYear('created_at', $reportYear)
             ->groupBy('month')
             ->pluck('count', 'month');
 
@@ -83,8 +123,86 @@ class ReportController extends Controller
             ->get();
 
         return view('admin.reports.index', compact(
-            'bookingsByStatus', 'bookingsByMonth', 'topPackages', 'stats', 'period',
+            'bookingsByStatus', 'bookingsByMonth', 'topPackages', 'stats', 'period', 'reportYear', 'availableYears',
             'inventoryAvailability', 'lowStockItems', 'mostUsedItems', 'damagedItems', 'usagePerEvent'
         ));
+    }
+
+    public function bookings(Request $request)
+    {
+        [$period, $startDate, $endDate] = $this->periodDates($request->get('period', 'month'));
+        $search = $request->get('search');
+        $perPage = (int) $request->get('per_page', 10);
+        if (! in_array($perPage, \App\Http\Controllers\AdminBookingController::PER_PAGE_OPTIONS, true)) {
+            $perPage = 10;
+        }
+
+        $query = Booking::with(['client.user', 'package'])
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->latest();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('event_type', 'like', "%{$search}%")
+                    ->orWhere('venue', 'like', "%{$search}%")
+                    ->orWhereHas('client.user', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $bookings = $query->paginate($perPage)->withQueryString();
+        $periodLabel = $this->periodLabel($period);
+
+        return view('admin.reports.bookings', compact('bookings', 'period', 'periodLabel', 'search', 'perPage'));
+    }
+
+    public function clients(Request $request)
+    {
+        [$period, $startDate, $endDate] = $this->periodDates($request->get('period', 'month'));
+        $search = $request->get('search');
+        $query = Client::with('user', 'bookings')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->latest();
+
+        if ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        $clients = $query->paginate(10)->withQueryString();
+        $periodLabel = $this->periodLabel($period);
+
+        return view('admin.reports.clients', compact('clients', 'period', 'periodLabel', 'search'));
+    }
+
+    public function upcomingEvents(Request $request)
+    {
+        [$period] = $this->periodDates($request->get('period', 'month'));
+        $search = $request->get('search');
+        $query = Booking::with(['client.user', 'package'])
+            ->where('status', 'Approved')
+            ->where('event_date', '>=', now())
+            ->orderBy('event_date');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('event_type', 'like', "%{$search}%")
+                    ->orWhere('venue', 'like', "%{$search}%")
+                    ->orWhereHas('client.user', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('package', function ($q2) use ($search) {
+                        $q2->where('package_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $upcomingEvents = $query->paginate(10)->withQueryString();
+
+        return view('admin.reports.upcoming-events', compact('upcomingEvents', 'search', 'period'));
     }
 }

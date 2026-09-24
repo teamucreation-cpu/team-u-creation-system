@@ -172,6 +172,9 @@ Route::middleware('auth')->group(function () {
 
         // Reports
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/bookings', [ReportController::class, 'bookings'])->name('reports.bookings');
+        Route::get('/reports/clients', [ReportController::class, 'clients'])->name('reports.clients');
+        Route::get('/reports/upcoming-events', [ReportController::class, 'upcomingEvents'])->name('reports.upcoming-events');
 
         // Inventory Monitoring
         Route::prefix('inventory')->name('inventory.')->group(function () {
