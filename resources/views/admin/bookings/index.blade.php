@@ -62,14 +62,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-2">
-                <select name="per_page" class="form-select" onchange="this.form.submit()">
-                    @foreach(\App\Http\Controllers\AdminBookingController::PER_PAGE_OPTIONS as $option)
-                        <option value="{{ $option }}" {{ $perPage === $option ? 'selected' : '' }}>{{ $option }} / page</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-6 col-md-2 d-flex gap-2">
+            <div class="col-6 col-md-4 d-flex gap-2">
                 <button type="submit" class="btn btn-gold"><i class="fas fa-filter me-1"></i> Apply</button>
                 @if($status || $search || $filter)
                     <a href="{{ route('admin.bookings.index') }}" class="btn btn-outline-secondary">Clear</a>

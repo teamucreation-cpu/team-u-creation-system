@@ -8,9 +8,6 @@ use Illuminate\Http\Request;
 
 class AdminBookingController extends Controller
 {
-    /**
-     * Rows-per-page choices offered on the Admin Bookings table.
-     */
     public const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
     public function index(Request $request)
@@ -18,11 +15,6 @@ class AdminBookingController extends Controller
         $status = $request->get('status');
         $filter = $request->get('filter');
         $search = $request->get('search');
-
-        $perPage = (int) $request->get('per_page', 10);
-        if (! in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
-            $perPage = 10;
-        }
 
         $query = Booking::with(['client.user', 'package']);
 
@@ -45,9 +37,9 @@ class AdminBookingController extends Controller
             });
         }
 
-        $bookings = $query->paginate($perPage)->withQueryString();
+        $bookings = $query->paginate(10)->withQueryString();
 
-        return view('admin.bookings.index', compact('bookings', 'status', 'filter', 'search', 'perPage'));
+        return view('admin.bookings.index', compact('bookings', 'status', 'filter', 'search'));
     }
 
     public function show(Booking $booking)

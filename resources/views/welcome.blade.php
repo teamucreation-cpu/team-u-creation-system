@@ -514,7 +514,7 @@
         We help make every event memorable, from intimate celebrations to grand occasions.
     </p>
     <div class="d-flex gap-2 justify-content-center flex-wrap lp-fade-4">
-        <a href="{{ route('register') }}" class="btn tu-btn-gold-lux lp-btn-lg">Get Started <i class="fas fa-arrow-right ms-1"></i></a>
+        <a href="{{ route('login') }}" class="btn tu-btn-gold-lux lp-btn-lg">Get Started</a>
     </div>
 </div>
 
@@ -618,7 +618,6 @@
     <div class="lp-footer-bottom-wrap">
         <div class="lp-footer-bottom">
             <span>&copy; {{ date('Y') }} Team U Creation. All Rights Reserved.</span>
-            <span><i class="fas fa-heart heart"></i> We Create, You Celebrate.</span>
         </div>
     </div>
 </div>
