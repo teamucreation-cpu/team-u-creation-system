@@ -100,6 +100,7 @@ Route::middleware('auth')->group(function () {
         // Appointments
         Route::get('/appointments', [ClientAppointmentController::class, 'index'])->name('appointments.index');
         Route::get('/appointments/create', [ClientAppointmentController::class, 'create'])->name('appointments.create');
+        Route::get('/appointments/{appointment}', [ClientAppointmentController::class, 'show'])->name('appointments.show');
         Route::post('/appointments', [ClientAppointmentController::class, 'store'])->name('appointments.store');
 
         // Calendar
@@ -109,6 +110,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/notifications', [ClientNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/{notification}/read', [ClientNotificationController::class, 'markAsRead'])->name('notifications.read');
         Route::post('/notifications/mark-all-read', [ClientNotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+        Route::get('/notifications/unread-count', [ClientNotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
+        Route::post('/notifications/{notification}/open', [ClientNotificationController::class, 'open'])->name('notifications.open');
         Route::delete('/notifications/{notification}', [ClientNotificationController::class, 'destroy'])->name('notifications.destroy');
 
         // Profile
@@ -133,6 +136,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
         Route::post('/bookings/{booking}/approve', [AdminBookingController::class, 'approve'])->name('bookings.approve');
         Route::post('/bookings/{booking}/decline', [AdminBookingController::class, 'decline'])->name('bookings.decline');
+        Route::post('/bookings/{booking}/reschedule', [AdminBookingController::class, 'reschedule'])->name('bookings.reschedule');
         Route::post('/bookings/{booking}/complete', [AdminBookingController::class, 'complete'])->name('bookings.complete');
 
         // Reviews (moderate client feedback before it appears publicly)
@@ -163,11 +167,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/appointments/{appointment}/approve', [AdminAppointmentController::class, 'approve'])->name('appointments.approve');
         Route::post('/appointments/{appointment}/decline', [AdminAppointmentController::class, 'decline'])->name('appointments.decline');
         Route::post('/appointments/{appointment}/reschedule', [AdminAppointmentController::class, 'reschedule'])->name('appointments.reschedule');
+        Route::post('/appointments/{appointment}/complete', [AdminAppointmentController::class, 'complete'])->name('appointments.complete');
+        Route::post('/appointments/{appointment}/cancel', [AdminAppointmentController::class, 'cancel'])->name('appointments.cancel');
 
         // Notifications
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
         Route::get('/notifications/create', [AdminNotificationController::class, 'create'])->name('notifications.create');
         Route::post('/notifications', [AdminNotificationController::class, 'store'])->name('notifications.store');
+        Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+        Route::get('/notifications/unread-count', [AdminNotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
+        Route::post('/notifications/{notification}/open', [AdminNotificationController::class, 'open'])->name('notifications.open');
         Route::delete('/notifications/{notification}', [AdminNotificationController::class, 'destroy'])->name('notifications.destroy');
 
         // Reports

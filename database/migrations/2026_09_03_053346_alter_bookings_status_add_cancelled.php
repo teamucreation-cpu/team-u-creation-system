@@ -15,7 +15,9 @@ return new class extends Migration
         // 'Cancelled' is distinct from 'Declined': Cancelled is the client
         // withdrawing their own still-Pending request; Declined is the admin
         // rejecting it. Keeping them separate preserves who took the action.
-        DB::statement("ALTER TABLE bookings MODIFY status ENUM('Pending', 'Approved', 'Declined', 'Rescheduled', 'Completed', 'Cancelled') NOT NULL DEFAULT 'Pending'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE bookings MODIFY status ENUM('Pending', 'Approved', 'Declined', 'Rescheduled', 'Completed', 'Cancelled') NOT NULL DEFAULT 'Pending'");
+        }
     }
 
     /**
@@ -23,6 +25,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE bookings MODIFY status ENUM('Pending', 'Approved', 'Declined', 'Rescheduled', 'Completed') NOT NULL DEFAULT 'Pending'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE bookings MODIFY status ENUM('Pending', 'Approved', 'Declined', 'Rescheduled', 'Completed') NOT NULL DEFAULT 'Pending'");
+        }
     }
 };

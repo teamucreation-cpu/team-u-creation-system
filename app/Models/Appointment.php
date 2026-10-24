@@ -35,4 +35,9 @@ class Appointment extends Model
     {
         return $this->belongsTo(Booking::class);
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
 }

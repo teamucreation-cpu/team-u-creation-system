@@ -60,7 +60,7 @@
                     <td>{{ $client->user->email }}</td>
                     <td>{{ $client->user->phone }}</td>
                     <td>{{ $client->bookings->count() }}</td>
-                    <td>{{ $client->created_at->format('M d, Y') }}</td>
+                    <td>{{ \App\Support\PhilippineTime::date($client->created_at) }}</td>
                     <td><a href="{{ route('admin.clients.show', $client) }}" class="btn btn-sm btn-outline-gold">View</a></td>
                 </tr>
                 @empty

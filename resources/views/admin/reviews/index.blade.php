@@ -82,7 +82,7 @@
                     @endfor
                 </td>
                 <td style="max-width: 260px;">{{ \Illuminate\Support\Str::limit($review->feedback, 80) }}</td>
-                <td>{{ $review->created_at->format('M d, Y') }}</td>
+                <td>{{ \App\Support\PhilippineTime::date($review->created_at) }}</td>
                 <td><span class="badge badge-{{ strtolower($review->status) }}">{{ $review->status }}</span></td>
                 <td class="text-nowrap">
                     @if($review->status !== 'Approved')

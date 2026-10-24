@@ -42,8 +42,12 @@
         <td>{{ $booking->package->package_name ?? 'No package selected (custom event)' }}</td>
     </tr>
     <tr>
-        <th>Submitted</th>
-        <td>{{ $booking->created_at->format('F d, Y g:i A') }}</td>
+        <th>Date Requested</th>
+        <td>{{ \App\Support\PhilippineTime::format($booking->created_at) }}</td>
+    </tr>
+    <tr>
+        <th>Last Updated</th>
+        <td>{{ \App\Support\PhilippineTime::format($booking->updated_at) }}</td>
     </tr>
 </table>
 
@@ -56,15 +60,17 @@
 @endif
 
 <div class="d-flex gap-2 mt-4">
-    <form method="POST" action="{{ route('admin.bookings.approve', $booking) }}">
-        @csrf
-        <button type="submit" class="btn btn-success">Approve</button>
-    </form>
+    @if($booking->status === 'Pending')
+        <form method="POST" action="{{ route('admin.bookings.approve', $booking) }}">
+            @csrf
+            <button type="submit" class="btn btn-success">Approve</button>
+        </form>
 
-    <form method="POST" action="{{ route('admin.bookings.decline', $booking) }}">
-        @csrf
-        <button type="submit" class="btn btn-danger">Decline</button>
-    </form>
+        <form method="POST" action="{{ route('admin.bookings.decline', $booking) }}">
+            @csrf
+            <button type="submit" class="btn btn-danger">Decline</button>
+        </form>
+    @endif
 
     @if($booking->status === 'Approved')
         @if($booking->event_date->isPast() || $booking->event_date->isToday())

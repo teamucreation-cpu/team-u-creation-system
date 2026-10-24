@@ -5,18 +5,28 @@
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h5 class="mb-0">All Notifications</h5>
+    <h5 class="mb-0">My Notifications</h5>
+    <div class="d-flex align-items-center gap-2">
+        <form method="POST" action="{{ route('admin.notifications.markAllRead') }}">
+            @csrf
+            <button class="btn btn-sm btn-outline-gold"><i class="fas fa-check-double me-1"></i> Mark All Read</button>
+        </form>
     <a href="{{ route('admin.notifications.create') }}" class="btn btn-gold"><i class="fas fa-paper-plane me-1"></i> Send Reminders</a>
+    </div>
 </div>
 
 <div class="table-custom">
     <table class="table mb-0">
-        <thead><tr><th>Recipient</th><th>Message</th><th>Type</th><th>Status</th><th>Sent</th><th></th></tr></thead>
+        <thead><tr><th>Message</th><th>Type</th><th>Status</th><th>Sent</th><th></th></tr></thead>
         <tbody>
             @forelse($notifications as $n)
             <tr>
-                <td>{{ $n->user->name ?? 'Unknown' }}</td>
-                <td>{{ Str::limit($n->message, 60) }}</td>
+                <td>
+                    <form method="POST" action="{{ route('admin.notifications.open', $n) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-link text-dark text-decoration-none p-0 text-start">{{ Str::limit($n->message, 90) }}</button>
+                    </form>
+                </td>
                 <td><span class="badge bg-secondary">{{ $n->notification_type }}</span></td>
                 <td>
                     @if($n->status === 'unread')
@@ -25,13 +35,8 @@
                         <span class="badge badge-completed">Read</span>
                     @endif
                 </td>
-                <td>{{ $n->relative_time }}</td>
+                <td>{{ $n->relative_time }} ({{ \App\Support\PhilippineTime::format($n->created_at, compact: true) }})</td>
                 <td class="text-end">
-                    {{-- This log lists every notification sent to every user, but
-                         deleting is still a personal action — only shown, and only
-                         allowed, on notifications addressed to the admin's own
-                         account (e.g. a low-stock alert), never a client's. --}}
-                    @if($n->user_id === auth()->id())
                     <div class="dropdown notif-menu">
                         <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notification options">
                             <i class="fas fa-ellipsis-vertical"></i>
@@ -45,11 +50,10 @@
                             </li>
                         </ul>
                     </div>
-                    @endif
                 </td>
             </tr>
             @empty
-            <tr><td colspan="6" class="text-muted text-center py-3">No notifications sent.</td></tr>
+            <tr><td colspan="5" class="text-muted text-center py-3">No notifications.</td></tr>
             @endforelse
         </tbody>
     </table>

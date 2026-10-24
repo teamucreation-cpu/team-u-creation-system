@@ -21,8 +21,11 @@
     <div class="stat-card mb-2 {{ $notif->status === 'unread' ? 'border-start border-4' : '' }}" style="{{ $notif->status === 'unread' ? 'border-color: var(--tu-gold) !important;' : '' }}">
         <div class="d-flex justify-content-between align-items-start gap-2">
             <div>
-                <p class="mb-1">{{ $notif->message }}</p>
-                <small class="text-muted"><i class="fas fa-clock me-1"></i>{{ $notif->relative_time }} &middot; {{ $notif->notification_type }}</small>
+                <form method="POST" action="{{ route('client.notifications.open', $notif) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-link text-dark text-decoration-none p-0 text-start"><p class="mb-1">{{ $notif->message }}</p></button>
+                </form>
+                <small class="text-muted"><i class="fas fa-clock me-1"></i>{{ $notif->relative_time }} ({{ \App\Support\PhilippineTime::format($notif->created_at, compact: true) }}) &middot; {{ $notif->notification_type }}</small>
             </div>
             <div class="d-flex align-items-center gap-1 flex-shrink-0">
                 @if($notif->status === 'unread')

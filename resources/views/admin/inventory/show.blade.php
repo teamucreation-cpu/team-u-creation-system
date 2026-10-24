@@ -48,7 +48,7 @@
         <p class="mb-0">{{ $inventoryItem->notes }}</p>
     @endif
 
-    <p class="text-muted mt-3 mb-0"><small>Last updated {{ $inventoryItem->updated_at->format('F d, Y g:i A') }}</small></p>
+    <p class="text-muted mt-3 mb-0"><small>Last updated {{ \App\Support\PhilippineTime::format($inventoryItem->updated_at) }}</small></p>
 
     <div class="mt-3">
         <a href="{{ route('admin.inventory.edit', $inventoryItem) }}" class="btn btn-sm btn-outline-gold">Edit Item</a>

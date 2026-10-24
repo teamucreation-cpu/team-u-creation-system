@@ -3,7 +3,13 @@
 namespace App\Services;
 
 use App\Models\Notification;
+use App\Models\Appointment;
+use App\Models\Booking;
 use App\Models\User;
+use App\Mail\WorkflowNotificationMail;
+use App\Support\PhilippineTime;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class NotificationService
 {
@@ -14,17 +20,36 @@ class NotificationService
         $this->smsService = $smsService;
     }
 
-    public function notify(User $user, string $message, string $type = 'general', bool $sendSms = true): Notification
+    public function notify(User $user, string $message, string $type = 'general', bool $sendSms = true, ?Appointment $appointment = null, ?Booking $booking = null): Notification
     {
-        $notification = Notification::create([
+        $unique = [
             'user_id' => $user->id,
-            'message' => $message,
             'notification_type' => $type,
-            'status' => 'unread',
-        ]);
+        ];
 
-        if ($sendSms && $user->phone) {
-            $this->smsService->send($user->phone, $message);
+        if ($booking || $appointment) {
+            $unique['booking_id'] = $booking?->id;
+            $unique['appointment_id'] = $appointment?->id;
+            $notification = Notification::firstOrCreate($unique, [
+                'message' => $message,
+                'status' => 'unread',
+            ]);
+        } else {
+            $notification = Notification::create(array_merge($unique, [
+                'message' => $message,
+                'status' => 'unread',
+            ]));
+        }
+
+        if ($notification->wasRecentlyCreated && $sendSms && $user->phone) {
+            try {
+                $this->smsService->send($user->phone, $message);
+            } catch (\Throwable $exception) {
+                Log::warning('Workflow notification SMS delivery failed.', [
+                    'user_id' => $user->id,
+                    'exception' => $exception::class,
+                ]);
+            }
         }
 
         return $notification;
@@ -36,75 +61,268 @@ class NotificationService
      * clients don't know or care what a booking's numeric id is; the event
      * type is what they actually recognize.
      */
-    public function notifyBookingSubmitted(User $clientUser, string $eventType): void
+    public function notifyBookingSubmitted(User $clientUser, Booking $booking): void
     {
         $this->notify(
             $clientUser,
-            'Your ' . $eventType . ' booking request has been submitted successfully. We will review it shortly.',
-            'booking_submitted'
+            'Your ' . $booking->event_type . ' booking request has been submitted successfully. We will review it shortly.',
+            'booking_submitted', true, null, $booking
+        );
+
+        $adminUrl = secure_url(route('admin.bookings.show', $booking, false));
+        $details = [
+            'Client' => $clientUser->name,
+            'Booking reference' => '#'.$booking->id,
+            'Event type' => $booking->event_type,
+            'Package' => $booking->package?->package_name ?? 'No package selected',
+            'Event date' => $booking->event_date->format('F j, Y'),
+            'Submitted' => PhilippineTime::format($booking->created_at),
+            'Status' => 'Pending',
+        ];
+
+        $this->notifyAdmins(
+            $booking,
+            null,
+            'New booking request from '.$clientUser->name.'.',
+            'booking_submitted',
+            'New Event Booking Request – Team U Creations',
+            'New Event Booking Request',
+            'A client has submitted an event booking request.',
+            $details,
+            $adminUrl,
+            'View Booking',
         );
     }
 
-    public function notifyBookingApproved(User $clientUser, string $eventType): void
+    public function notifyBookingApproved(Booking $booking): void
     {
-        $this->notify(
+        $clientUser = $booking->client->user;
+        $notification = $this->notify(
             $clientUser,
-            'Great news! Your ' . $eventType . ' booking has been approved. You may now view the event details in your calendar.',
-            'booking_approved'
+            'Great news! Your '.$booking->event_type.' booking has been approved.',
+            'booking_approved', true, null, $booking
+        );
+        if (! $notification->wasRecentlyCreated) {
+            return;
+        }
+        $this->sendEmail(
+            $clientUser,
+            'Event Booking Approved – Team U Creations',
+            'Event Booking Approved',
+            'Your event booking has been approved.',
+            ['Booking reference' => '#'.$booking->id, 'Event type' => $booking->event_type, 'Event date' => $booking->event_date->format('F j, Y'), 'Status' => 'Approved'],
+            secure_url(route('client.bookings.show', $booking, false)),
+            'View Booking',
         );
     }
 
-    public function notifyBookingDeclined(User $clientUser, string $eventType): void
+    public function notifyBookingDeclined(Booking $booking): void
     {
-        $this->notify(
+        $clientUser = $booking->client->user;
+        $notification = $this->notify(
             $clientUser,
-            'Your ' . $eventType . ' booking request has been declined. Please contact us for more information.',
-            'booking_declined'
+            'Your '.$booking->event_type.' booking request has been declined.',
+            'booking_declined', true, null, $booking
+        );
+        if (! $notification->wasRecentlyCreated) {
+            return;
+        }
+        $this->sendEmail(
+            $clientUser,
+            'Event Booking Declined – Team U Creations',
+            'Event Booking Declined',
+            'We are unable to approve your event booking request.',
+            ['Booking reference' => '#'.$booking->id, 'Event type' => $booking->event_type, 'Event date' => $booking->event_date->format('F j, Y'), 'Status' => 'Declined'],
+            secure_url(route('client.bookings.show', $booking, false)),
+            'View Booking',
         );
     }
 
-    public function notifyBookingRescheduled(User $clientUser, string $eventType, string $newDate): void
+    public function notifyBookingRescheduled(Booking $booking, string $previousDate): void
     {
-        $this->notify(
+        $clientUser = $booking->client->user;
+        $notification = $this->notify(
             $clientUser,
-            'Your ' . $eventType . ' booking has been rescheduled to ' . $newDate . '.',
-            'booking_rescheduled'
+            'Your '.$booking->event_type.' booking has been rescheduled to '.$booking->event_date->format('F j, Y').'.',
+            'booking_rescheduled', true, null, $booking
+        );
+        if (! $notification->wasRecentlyCreated) {
+            return;
+        }
+        $this->sendEmail(
+            $clientUser,
+            'Event Booking Rescheduled – Team U Creations',
+            'Event Booking Rescheduled',
+            'Your event booking schedule has changed.',
+            ['Booking reference' => '#'.$booking->id, 'Event type' => $booking->event_type, 'Previous event date' => $previousDate, 'Updated event date' => $booking->event_date->format('F j, Y'), 'Status' => 'Rescheduled'],
+            secure_url(route('client.bookings.show', $booking, false)),
+            'View Booking',
         );
     }
 
-    public function notifyAppointmentSubmitted(User $clientUser): void
+    public function notifyAppointmentSubmitted(User $clientUser, Appointment $appointment): void
     {
         $this->notify(
             $clientUser,
             'Your appointment request has been received and is awaiting confirmation.',
-            'appointment_submitted'
+            'appointment_submitted',
+            true,
+            $appointment
+        );
+
+        $this->notifyAdmins(
+            null,
+            $appointment,
+            'New appointment request from '.$clientUser->name.'.',
+            'appointment_submitted',
+            'New Appointment Request – Team U Creations',
+            'New Appointment Request',
+            'A client has submitted an appointment request.',
+            ['Client' => $clientUser->name, 'Appointment reference' => '#'.$appointment->id, 'Appointment date' => $appointment->appointment_date->format('F j, Y'), 'Appointment time' => $this->formatTime($appointment->appointment_time), 'Purpose' => $appointment->purpose, 'Status' => 'Pending', 'Submitted' => PhilippineTime::format($appointment->created_at)],
+            secure_url(route('admin.appointments.show', $appointment, false)),
+            'View Appointment',
         );
     }
 
-    public function notifyAppointmentConfirmed(User $clientUser): void
+    public function notifyAppointmentConfirmed(User $clientUser, Appointment $appointment): void
     {
-        $this->notify(
+        $notification = $this->notify(
             $clientUser,
             'Your appointment has been confirmed. Please check the appointment details.',
-            'appointment_confirmed'
+            'appointment_confirmed',
+            true,
+            $appointment
+        );
+        if (! $notification->wasRecentlyCreated) {
+            return;
+        }
+        $this->sendEmail(
+            $clientUser,
+            'Appointment Approved – Team U Creations',
+            'Appointment Approved',
+            'Your appointment request has been approved.',
+            $this->appointmentDetails($appointment, 'Confirmed'),
+            secure_url(route('client.appointments.show', $appointment, false)),
+            'View Appointment',
         );
     }
 
-    public function notifyAppointmentDeclined(User $clientUser): void
+    public function notifyAppointmentDeclined(User $clientUser, Appointment $appointment): void
     {
-        $this->notify(
+        $notification = $this->notify(
             $clientUser,
             'Your appointment request has been declined. Please contact us for more information.',
-            'appointment_declined'
+            'appointment_declined',
+            true,
+            $appointment
+        );
+        if (! $notification->wasRecentlyCreated) {
+            return;
+        }
+        $this->sendEmail(
+            $clientUser,
+            'Appointment Declined – Team U Creations',
+            'Appointment Declined',
+            'We are unable to approve your appointment request.',
+            $this->appointmentDetails($appointment, 'Declined'),
+            secure_url(route('client.appointments.show', $appointment, false)),
+            'View Appointment',
         );
     }
 
-    public function notifyAppointmentRescheduled(User $clientUser): void
+    public function notifyAppointmentRescheduled(User $clientUser, Appointment $appointment, string $previousSchedule): void
+    {
+        $notification = $this->notify(
+            $clientUser,
+            'Your appointment has been rescheduled. Please check the updated appointment details.',
+            'appointment_rescheduled',
+            true,
+            $appointment
+        );
+        if (! $notification->wasRecentlyCreated) {
+            return;
+        }
+        $this->sendEmail(
+            $clientUser,
+            'Appointment Rescheduled – Team U Creations',
+            'Appointment Rescheduled',
+            'Your appointment has been moved to a new schedule.',
+            array_merge(['Previous schedule' => $previousSchedule], $this->appointmentDetails($appointment, 'Rescheduled')),
+            secure_url(route('client.appointments.show', $appointment, false)),
+            'View Appointment',
+        );
+    }
+
+    private function notifyAdmins(?Booking $booking, ?Appointment $appointment, string $message, string $type, string $subject, string $heading, string $intro, array $details, string $url, string $actionLabel): void
+    {
+        foreach (User::where('role', 'admin')->get() as $admin) {
+            $notification = $this->notify($admin, $message, $type, false, $appointment, $booking);
+            if ($notification->wasRecentlyCreated) {
+                $this->sendEmail($admin, $subject, $heading, $intro, $details, $url, $actionLabel);
+            }
+        }
+    }
+
+    private function sendEmail(User $user, string $subject, string $heading, string $intro, array $details, string $url, string $actionLabel): void
+    {
+        if (! $user->email) {
+            Log::warning('Workflow notification email was not sent because the recipient has no email address.', [
+                'user_id' => $user->id,
+                'subject' => $subject,
+            ]);
+
+            return;
+        }
+
+        try {
+            Mail::mailer('smtp')
+                ->to($user->email)
+                ->send(new WorkflowNotificationMail($subject, $heading, $intro, $details, $url, $actionLabel));
+        } catch (\Throwable $exception) {
+            Log::error('Workflow notification email delivery failed.', [
+                'user_id' => $user->id,
+                'subject' => $subject,
+                'mailer' => 'smtp',
+                'exception' => $exception::class,
+            ]);
+        }
+    }
+
+    private function appointmentDetails(Appointment $appointment, string $status): array
+    {
+        return [
+            'Appointment reference' => '#'.$appointment->id,
+            'Purpose' => $appointment->purpose,
+            'Appointment date' => $appointment->appointment_date->format('F j, Y'),
+            'Appointment time' => $this->formatTime($appointment->appointment_time),
+            'Status' => $status,
+        ];
+    }
+
+    private function formatTime(string $time): string
+    {
+        return \Carbon\Carbon::parse($time, config('app.display_timezone', 'Asia/Manila'))->format('g:i A');
+    }
+
+    public function notifyAppointmentCompleted(User $clientUser, Appointment $appointment): void
     {
         $this->notify(
             $clientUser,
-            'Your appointment has been rescheduled. Please check the updated appointment details.',
-            'appointment_rescheduled'
+            'Your appointment has been marked as completed.',
+            'appointment_completed',
+            true,
+            $appointment
+        );
+    }
+
+    public function notifyAppointmentCancelled(User $clientUser, Appointment $appointment): void
+    {
+        $this->notify(
+            $clientUser,
+            'Your appointment has been cancelled.',
+            'appointment_cancelled',
+            true,
+            $appointment
         );
     }
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Team U Creation')</title>
+    <title>@yield('title', 'Team U Creations')</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -409,6 +409,7 @@
 
         /* Status badges */
         .badge-pending { background: #fff3cd; color: #856404; }
+        .badge-confirmed { background: #d4edda; color: #155724; }
         .badge-approved { background: #d4edda; color: #155724; }
         .badge-declined { background: #f8d7da; color: #721c24; }
         .badge-rescheduled { background: #d1ecf1; color: #0c5460; }
@@ -744,6 +745,7 @@
             $__role = Auth::user()->role;
             $__profileRoute = match($__role) { 'admin' => 'admin.profile.edit', default => 'client.profile.edit' };
             $__notifRoute = match($__role) { 'admin' => 'admin.notifications.index', default => 'client.notifications.index' };
+            $__notifCountRoute = match($__role) { 'admin' => 'admin.notifications.unreadCount', default => 'client.notifications.unreadCount' };
             $__unreadCount = Auth::user()->appNotifications()->where('status', 'unread')->count();
         @endphp
         {{-- Sidebar --}}
@@ -753,7 +755,7 @@
                 <div class="brand-mark">
                     @include('layouts.partials.brand-mark')
                 </div>
-                <h4>Team U Creation</h4>
+                <h4>Team U Creations</h4>
                 <div class="brand-tagline">
                     <p class="tagline-line tagline-white">We Create,</p>
                     <p class="tagline-line tagline-gold">You Celebrate.</p>
@@ -778,10 +780,10 @@
                     <h5 class="mb-0" style="font-weight: 600;">@yield('page-title', 'Dashboard')</h5>
                 </div>
                 <div class="user-info">
-                    <a href="{{ route($__notifRoute) }}" class="notif-bell" title="Notifications">
+                    <a href="{{ route($__notifRoute) }}" class="notif-bell" title="Notifications" aria-label="Notifications" data-unread-url="{{ route($__notifCountRoute) }}">
                         <i class="fas fa-bell"></i>
                         @if($__unreadCount > 0)
-                            <span class="notif-badge">{{ $__unreadCount > 9 ? '9+' : $__unreadCount }}</span>
+                            <span class="notif-badge" data-notif-badge>{{ $__unreadCount > 9 ? '9+' : $__unreadCount }}</span>
                         @endif
                     </a>
                     <div class="dropdown">
@@ -837,7 +839,7 @@
                 <div class="container">
                     <a class="navbar-brand d-flex align-items-center gap-2 mb-0" href="{{ url('/') }}">
                         <span class="tu-guest-brand-ring">@include('layouts.partials.brand-mark')</span>
-                        <span class="tu-guest-brand-text">TEAM U CREATION</span>
+                        <span class="tu-guest-brand-text">TEAM U CREATIONS</span>
                     </a>
                     <div class="tu-guest-nav-links">
                         @if(request()->is('/'))
@@ -873,6 +875,32 @@
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('show');
             document.getElementById('sidebarOverlay').classList.toggle('show');
+        }
+
+        const notificationBell = document.querySelector('[data-unread-url]');
+        if (notificationBell) {
+            const updateUnreadCount = () => fetch(notificationBell.dataset.unreadUrl, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+                .then(response => response.ok ? response.json() : null)
+                .then(data => {
+                    if (!data) return;
+                    let badge = notificationBell.querySelector('[data-notif-badge]');
+                    if (data.count > 0 && !badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'notif-badge';
+                        badge.dataset.notifBadge = '';
+                        notificationBell.appendChild(badge);
+                    }
+                    if (badge) {
+                        badge.textContent = data.count > 9 ? '9+' : data.count;
+                        badge.style.display = data.count === 0 ? 'none' : 'flex';
+                    }
+                })
+                .catch(() => {});
+
+            window.setInterval(updateUnreadCount, 60000);
         }
     </script>
     @stack('scripts')

@@ -89,6 +89,8 @@
                     <th>Venue</th>
                     <th>Date</th>
                     <th>Status</th>
+                    <th>Date Requested</th>
+                    <th>Last Updated</th>
                     <th></th>
                 </tr>
             </thead>
@@ -100,10 +102,12 @@
                         <td>{{ $booking->venue }}</td>
                         <td>{{ $booking->event_date->format('M d, Y') }}</td>
                         <td><span class="badge badge-{{ strtolower($booking->status) }}">{{ $booking->status }}</span></td>
+                        <td>{{ \App\Support\PhilippineTime::format($booking->created_at, compact: true) }}</td>
+                        <td>{{ \App\Support\PhilippineTime::format($booking->updated_at, compact: true) }}</td>
                         <td><a href="{{ route('admin.bookings.show', $booking) }}" class="btn btn-sm btn-outline-gold">View Details</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="text-muted text-center py-3">No bookings found.</td></tr>
+                    <tr><td colspan="8" class="text-muted text-center py-3">No bookings found.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -103,7 +103,7 @@ class BookingController extends Controller
             'status' => 'Pending',
         ]);
 
-        app(NotificationService::class)->notifyBookingSubmitted(Auth::user(), $booking->event_type);
+        app(NotificationService::class)->notifyBookingSubmitted(Auth::user(), $booking);
 
         return redirect()->route('client.bookings.show', $booking)
             ->with('success', 'Booking submitted! We will review it and update you soon.');
@@ -148,6 +148,7 @@ class BookingController extends Controller
     public function edit(Booking $booking)
     {
         $this->authorizeOwner($booking);
+        $booking->refresh();
 
         if (! $booking->isEditable()) {
             return redirect()->route('client.bookings.show', $booking)
@@ -214,12 +215,20 @@ class BookingController extends Controller
         // Status is deliberately left untouched — an edit does not
         // re-approve itself, it still needs to be (re-)reviewed as Pending,
         // which it already is (isEditable() above guarantees that).
-        $booking->update([
+        $updated = Booking::query()
+            ->whereKey($booking->getKey())
+            ->where('status', 'Pending')
+            ->update([
             'package_id' => $validated['package_id'] ?? null,
             'event_type' => $validated['event_type'],
             'venue' => $validated['venue'],
             'event_date' => $validated['event_date'],
         ]);
+
+        if (! $updated && ! Booking::query()->whereKey($booking->getKey())->where('status', 'Pending')->exists()) {
+            return redirect()->route('client.bookings.show', $booking)
+                ->with('error', 'This booking has already been reviewed and can no longer be edited.');
+        }
 
         return redirect()->route('client.bookings.show', $booking)
             ->with('success', 'Booking updated. It will need to be reviewed by the admin again before it\'s approved.');
@@ -234,7 +243,15 @@ class BookingController extends Controller
                 ->with('error', 'This booking has already been reviewed and can no longer be cancelled.');
         }
 
-        $booking->update(['status' => 'Cancelled']);
+        $updated = Booking::query()
+            ->whereKey($booking->getKey())
+            ->where('status', 'Pending')
+            ->update(['status' => 'Cancelled']);
+
+        if (! $updated) {
+            return redirect()->route('client.bookings.show', $booking)
+                ->with('error', 'This booking has already been reviewed and can no longer be cancelled.');
+        }
 
         return redirect()->route('client.bookings.index')
             ->with('success', 'Booking cancelled. The date is now available again.');

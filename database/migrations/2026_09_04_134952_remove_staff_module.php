@@ -27,7 +27,7 @@ return new class extends Migration
         // Inventory Assignments is a preserved feature (item <-> booking,
         // with quantity/status/notes) — only the "who on staff is
         // responsible for it" link is removed.
-        if (Schema::hasColumn('inventory_assignments', 'assigned_staff')) {
+        if (DB::getDriverName() === 'mysql' && Schema::hasColumn('inventory_assignments', 'assigned_staff')) {
             Schema::table('inventory_assignments', function (Blueprint $table) {
                 $table->dropConstrainedForeignId('assigned_staff');
             });
@@ -38,12 +38,16 @@ return new class extends Migration
         // 'staff' as an allowed value.
         DB::table('users')->where('role', 'staff')->delete();
 
-        DB::statement("ALTER TABLE users MODIFY role ENUM('client', 'admin') NOT NULL DEFAULT 'client'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY role ENUM('client', 'admin') NOT NULL DEFAULT 'client'");
+        }
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE users MODIFY role ENUM('client', 'staff', 'admin') NOT NULL DEFAULT 'client'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY role ENUM('client', 'staff', 'admin') NOT NULL DEFAULT 'client'");
+        }
 
         if (! Schema::hasColumn('inventory_assignments', 'assigned_staff')) {
             Schema::table('inventory_assignments', function (Blueprint $table) {

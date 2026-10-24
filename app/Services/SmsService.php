@@ -18,7 +18,7 @@ class SmsService
     public function send(string $phoneNumber, string $message): bool
     {
         if (!$this->enabled) {
-            Log::info('[SMS-DISABLED] To: ' . $phoneNumber . ' | Message: ' . $message);
+            Log::info('[SMS-DISABLED] Delivery skipped because SMS is disabled.');
             return true;
         }
 
@@ -31,7 +31,7 @@ class SmsService
 
     protected function sendViaLog(string $phoneNumber, string $message): bool
     {
-        Log::channel('single')->info('[SMS] To: ' . $phoneNumber . ' | Message: ' . $message);
+        Log::channel('single')->info('[SMS] Simulated delivery completed.');
         return true;
     }
 
@@ -54,10 +54,10 @@ class SmsService
             $response = curl_exec($ch);
             curl_close($ch);
 
-            Log::info('[SMS-SEMAPHORE] Sent to: ' . $phoneNumber . ' | Response: ' . $response);
+            Log::info('[SMS-SEMAPHORE] Delivery request completed.');
             return true;
         } catch (\Exception $e) {
-            Log::error('[SMS-SEMAPHORE] Failed: ' . $e->getMessage());
+            Log::error('[SMS-SEMAPHORE] Delivery failed.', ['exception' => $e::class]);
             return false;
         }
     }
@@ -82,10 +82,10 @@ class SmsService
             $response = curl_exec($ch);
             curl_close($ch);
 
-            Log::info('[SMS-TWILIO] Sent to: ' . $phoneNumber . ' | Response: ' . $response);
+            Log::info('[SMS-TWILIO] Delivery request completed.');
             return true;
         } catch (\Exception $e) {
-            Log::error('[SMS-TWILIO] Failed: ' . $e->getMessage());
+            Log::error('[SMS-TWILIO] Delivery failed.', ['exception' => $e::class]);
             return false;
         }
     }

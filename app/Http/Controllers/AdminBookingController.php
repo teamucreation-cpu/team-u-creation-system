@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Services\NotificationService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class AdminBookingController extends Controller
@@ -58,6 +59,10 @@ class AdminBookingController extends Controller
 
     public function approve(Booking $booking)
     {
+        if ($booking->fresh()->status !== 'Pending') {
+            return back()->with('error', 'This booking has already been reviewed.');
+        }
+
         $conflict = Booking::where('event_date', $booking->event_date)
             ->where('status', 'Approved')
             ->where('id', '!=', $booking->id)
@@ -67,20 +72,97 @@ class AdminBookingController extends Controller
             return back()->with('error', 'Cannot approve — another booking is already approved for this date. Decline one of them first.');
         }
 
-        $booking->update(['status' => 'Approved']);
+        $updated = Booking::query()
+            ->whereKey($booking->getKey())
+            ->where('status', 'Pending')
+            ->update(['status' => 'Approved']);
 
-        app(NotificationService::class)->notifyBookingApproved($booking->client->user, $booking->event_type);
+        if (! $updated) {
+            return back()->with('error', 'This booking has already been reviewed.');
+        }
+
+        $booking->refresh();
+
+        app(NotificationService::class)->notifyBookingApproved($booking);
 
         return back()->with('success', 'Booking approved.');
     }
 
     public function decline(Booking $booking)
     {
-        $booking->update(['status' => 'Declined']);
+        $updated = Booking::query()
+            ->whereKey($booking->getKey())
+            ->where('status', 'Pending')
+            ->update(['status' => 'Declined']);
 
-        app(NotificationService::class)->notifyBookingDeclined($booking->client->user, $booking->event_type);
+        if (! $updated) {
+            return back()->with('error', 'This booking has already been reviewed.');
+        }
+
+        $booking->refresh();
+
+        app(NotificationService::class)->notifyBookingDeclined($booking);
 
         return back()->with('success', 'Booking declined.');
+    }
+
+    public function reschedule(Request $request, Booking $booking)
+    {
+        $validated = $request->validate([
+            'event_date' => [
+                'bail',
+                'required',
+                'date_format:Y-m-d',
+                'after_or_equal:today',
+                function ($attribute, $value, $fail) use ($booking) {
+                    $rule = Booking::bookingRuleFor($booking->event_type);
+                    $earliest = Booking::earliestBookableDate($booking->event_type);
+
+                    if ($value < $earliest->toDateString()) {
+                        $fail(
+                            'Booking cannot proceed: '.$rule['label'].' events must be booked at least '
+                            .Booking::bookingRuleNoticeLabel($rule).' before the event date. '
+                            .'The earliest eligible date for this event type is '.$earliest->format('F d, Y').'.'
+                        );
+                    }
+                },
+            ],
+        ]);
+
+        $booking->refresh();
+        if ($booking->status !== 'Pending') {
+            return back()->with('error', 'Only pending bookings can be rescheduled.');
+        }
+
+        $updatedDate = Carbon::parse($validated['event_date'])->toDateString();
+        $previousDate = $booking->event_date->format('F j, Y');
+        if ($booking->event_date->toDateString() === $updatedDate) {
+            return back()->with('error', 'Choose a different event date to reschedule this booking.');
+        }
+
+        $conflict = Booking::whereDate('event_date', $updatedDate)
+            ->whereIn('status', ['Pending', 'Approved'])
+            ->where('id', '!=', $booking->id)
+            ->exists();
+
+        if ($conflict) {
+            return back()->with('error', 'That date already has a pending or approved booking. Choose another date.');
+        }
+
+        $updated = Booking::query()
+            ->whereKey($booking->getKey())
+            ->where('status', 'Pending')
+            ->whereDate('event_date', $booking->event_date->toDateString())
+            ->update(['event_date' => $updatedDate, 'status' => 'Rescheduled']);
+
+        if (! $updated) {
+            return back()->with('error', 'This booking has already been reviewed.');
+        }
+
+        $booking->refresh();
+        app(NotificationService::class)->notifyBookingRescheduled($booking, $previousDate);
+
+        return back()->with('success', 'Booking rescheduled.');
     }
 
     /**
@@ -89,6 +171,8 @@ class AdminBookingController extends Controller
      */
     public function complete(Booking $booking)
     {
+        $booking->refresh();
+
         if ($booking->status !== 'Approved') {
             return back()->with('error', 'Only an approved booking can be marked completed.');
         }
@@ -97,7 +181,14 @@ class AdminBookingController extends Controller
             return back()->with('error', 'This event hasn\'t happened yet — it can only be marked completed on or after its event date.');
         }
 
-        $booking->update(['status' => 'Completed']);
+        $updated = Booking::query()
+            ->whereKey($booking->getKey())
+            ->where('status', 'Approved')
+            ->update(['status' => 'Completed']);
+
+        if (! $updated) {
+            return back()->with('error', 'Only an approved booking can be marked completed.');
+        }
 
         return back()->with('success', 'Booking marked as completed. The client can now leave a review.');
     }

@@ -26,7 +26,7 @@
                         <i class="fas fa-star" style="color: {{ $i <= $review->rating ? 'var(--tu-gold)' : '#e0e0e0' }};"></i>
                     @endfor
                 </td>
-                <td>{{ $review->created_at->format('M d, Y') }}</td>
+                <td>{{ \App\Support\PhilippineTime::date($review->created_at) }}</td>
                 <td><span class="badge badge-{{ strtolower($review->status) }}">{{ $review->status }}</span></td>
                 <td>
                     <a href="{{ route('client.bookings.show', $review->booking) }}" class="btn btn-sm btn-outline-gold">View</a>

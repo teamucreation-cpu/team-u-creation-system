@@ -59,7 +59,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">Your Feedback</label>
-                    <textarea class="form-control" name="feedback" rows="5" maxlength="2000" placeholder="Tell us about your experience with Team U Creation..." required>{{ old('feedback') }}</textarea>
+                    <textarea class="form-control" name="feedback" rows="5" maxlength="2000" placeholder="Tell us about your experience with Team U Creations..." required>{{ old('feedback') }}</textarea>
                 </div>
 
                 <button type="submit" class="btn btn-gold"><i class="fas fa-paper-plane me-1"></i> Submit Review</button>

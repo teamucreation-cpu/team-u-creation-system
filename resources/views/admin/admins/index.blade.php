@@ -23,7 +23,7 @@
                 </td>
                 <td>{{ $account->email }}</td>
                 <td>{{ $account->phone }}</td>
-                <td>{{ $account->created_at->format('M d, Y') }}</td>
+                <td>{{ \App\Support\PhilippineTime::date($account->created_at) }}</td>
                 <td>
                     <a href="{{ route('admin.admins.edit', $account) }}" class="btn btn-sm btn-outline-gold">Edit</a>
                     @if($account->id !== auth()->id() && $admins->count() > 1)

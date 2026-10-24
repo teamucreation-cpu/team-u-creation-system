@@ -19,7 +19,8 @@
         </div>
         <div class="col-md-6">
             <p><strong><i class="fas fa-box-open me-2" style="color: var(--tu-gold);"></i>Package:</strong> {{ $booking->package->package_name ?? 'Custom Event (No Package)' }}</p>
-            <p><strong><i class="fas fa-clock me-2" style="color: var(--tu-gold);"></i>Submitted:</strong> {{ $booking->created_at->format('F d, Y g:i A') }}</p>
+            <p><strong><i class="fas fa-clock me-2" style="color: var(--tu-gold);"></i>Date Requested:</strong> {{ \App\Support\PhilippineTime::format($booking->created_at) }}</p>
+            <p><strong><i class="fas fa-clock me-2" style="color: var(--tu-gold);"></i>Last Updated:</strong> {{ \App\Support\PhilippineTime::format($booking->updated_at) }}</p>
         </div>
     </div>
 

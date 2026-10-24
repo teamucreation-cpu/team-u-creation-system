@@ -286,14 +286,14 @@
                 <div class="meta-icon"><i class="fas fa-id-badge"></i></div>
                 <div>
                     <div class="meta-label">Client ID</div>
-                    <div class="meta-value">CLT-{{ $client->created_at->format('Y') }}-{{ str_pad($client->id, 5, '0', STR_PAD_LEFT) }}</div>
+                    <div class="meta-value">CLT-{{ \App\Support\PhilippineTime::date($client->created_at, 'Y') }}-{{ str_pad($client->id, 5, '0', STR_PAD_LEFT) }}</div>
                 </div>
             </div>
             <div class="meta-row">
                 <div class="meta-icon"><i class="fas fa-calendar-alt"></i></div>
                 <div>
                     <div class="meta-label">Member Since</div>
-                    <div class="meta-value">{{ $client->created_at->format('F j, Y') }}</div>
+                    <div class="meta-value">{{ \App\Support\PhilippineTime::date($client->created_at, 'F j, Y') }}</div>
                 </div>
             </div>
 

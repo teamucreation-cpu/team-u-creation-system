@@ -71,7 +71,7 @@
                     <td>{{ $item->quantity_in_use }}</td>
                     <td>{{ $item->quantity_damaged }}</td>
                     <td><span class="badge badge-{{ strtolower(str_replace(' ', '-', $item->status)) }}">{{ $item->status }}</span></td>
-                    <td>{{ $item->updated_at->format('M d, Y') }}</td>
+                    <td>{{ \App\Support\PhilippineTime::date($item->updated_at) }}</td>
                     <td>
                         <a href="{{ route('admin.inventory.show', $item) }}" class="btn btn-sm btn-outline-gold">View</a>
                         <a href="{{ route('admin.inventory.edit', $item) }}" class="btn btn-sm btn-outline-gold">Edit</a>

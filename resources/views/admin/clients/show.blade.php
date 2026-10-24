@@ -14,7 +14,7 @@
             <p><strong>Email:</strong> {{ $client->user->email }}</p>
             <p><strong>Phone:</strong> {{ $client->user->phone }}</p>
             <p><strong>Address:</strong> {{ $client->address ?? 'N/A' }}</p>
-            <p><strong>Joined:</strong> {{ $client->created_at->format('M d, Y') }}</p>
+            <p><strong>Joined:</strong> {{ \App\Support\PhilippineTime::date($client->created_at) }}</p>
         </div>
     </div>
     <div class="col-md-8">
@@ -25,7 +25,7 @@
             @else
                 <div class="table-responsive">
                     <table class="table table-sm">
-                        <thead><tr><th>Event</th><th>Date</th><th>Package</th><th>Status</th></tr></thead>
+                        <thead><tr><th>Event</th><th>Date</th><th>Package</th><th>Status</th><th>Date Requested</th><th>Last Updated</th></tr></thead>
                         <tbody>
                             @foreach($client->bookings as $booking)
                             <tr>
@@ -33,6 +33,8 @@
                                 <td>{{ $booking->event_date->format('M d, Y') }}</td>
                                 <td>{{ $booking->package->package_name ?? 'Custom' }}</td>
                                 <td><span class="badge badge-{{ strtolower($booking->status) }}">{{ $booking->status }}</span></td>
+                                <td>{{ \App\Support\PhilippineTime::format($booking->created_at, compact: true) }}</td>
+                                <td>{{ \App\Support\PhilippineTime::format($booking->updated_at, compact: true) }}</td>
                             </tr>
                             @endforeach
                         </tbody>

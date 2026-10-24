@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Team U Creation — Event Coordination')
+@section('title', 'Team U Creations — Event Coordination')
 
 @section('content')
 <style>
@@ -569,7 +569,7 @@
             {{-- Column 1 — Company Information --}}
             <div class="col-lg-4 col-md-6 lp-footer-col">
                 <div class="lp-footer-logo-ring">@include('layouts.partials.brand-mark')</div>
-                <div class="lp-footer-brand-name">TEAM U CREATION</div>
+                <div class="lp-footer-brand-name">TEAM U CREATIONS</div>
                 <div class="lp-footer-tagline">"We Create, You Celebrate."</div>
                 <p class="lp-footer-desc">We help turn your vision into reality by providing seamless event planning, coordination, and management services for unforgettable celebrations.</p>
             </div>
@@ -617,7 +617,7 @@
 
     <div class="lp-footer-bottom-wrap">
         <div class="lp-footer-bottom">
-            <span>&copy; {{ date('Y') }} Team U Creation. All Rights Reserved.</span>
+            <span>&copy; {{ date('Y') }} Team U Creations. All Rights Reserved.</span>
         </div>
     </div>
 </div>

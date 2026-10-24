@@ -17,6 +17,13 @@ class AppointmentController extends Controller
         return view('client.appointments.index', compact('appointments'));
     }
 
+    public function show(int $appointment)
+    {
+        $appointment = Auth::user()->client->appointments()->with('booking')->findOrFail($appointment);
+
+        return view('client.appointments.show', compact('appointment'));
+    }
+
     public function create()
     {
         $bookings = Auth::user()->client->bookings()->get();
@@ -42,7 +49,7 @@ class AppointmentController extends Controller
             }
         }
 
-        Appointment::create([
+        $appointment = Appointment::create([
             'client_id' => $client->id,
             'booking_id' => $validated['booking_id'] ?? null,
             'appointment_date' => $validated['appointment_date'],
@@ -52,7 +59,7 @@ class AppointmentController extends Controller
             'status' => 'Pending',
         ]);
 
-        app(NotificationService::class)->notifyAppointmentSubmitted(Auth::user());
+        app(NotificationService::class)->notifyAppointmentSubmitted(Auth::user(), $appointment);
 
         return redirect()->route('client.appointments.index')->with('success', 'Appointment request submitted.');
     }

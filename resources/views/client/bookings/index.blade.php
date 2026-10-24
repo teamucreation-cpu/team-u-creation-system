@@ -42,9 +42,9 @@
     </form>
 </div>
 
-<div class="table-custom">
+<div class="table-custom table-responsive">
     <table class="table mb-0">
-        <thead><tr><th>Event Type</th><th>Venue</th><th>Date</th><th>Package</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Event Type</th><th>Venue</th><th>Date</th><th>Package</th><th>Status</th><th>Date Requested</th><th>Last Updated</th><th></th></tr></thead>
         <tbody>
             @forelse($bookings as $booking)
             <tr>
@@ -53,6 +53,8 @@
                 <td>{{ $booking->event_date->format('M d, Y') }}</td>
                 <td>{{ $booking->package->package_name ?? 'Custom' }}</td>
                 <td><span class="badge badge-{{ strtolower($booking->status) }}">{{ $booking->status }}</span></td>
+                <td>{{ \App\Support\PhilippineTime::format($booking->created_at, compact: true) }}</td>
+                <td>{{ \App\Support\PhilippineTime::format($booking->updated_at, compact: true) }}</td>
                 <td class="text-end">
                     <div class="d-flex gap-1 justify-content-end">
                         <a href="{{ route('client.bookings.show', $booking) }}" class="btn btn-sm btn-outline-gold">View</a>
@@ -69,7 +71,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="6" class="text-muted text-center py-3">No bookings found. <a href="{{ route('client.bookings.create') }}">Book your first event!</a></td></tr>
+            <tr><td colspan="8" class="text-muted text-center py-3">No bookings found. <a href="{{ route('client.bookings.create') }}">Book your first event!</a></td></tr>
             @endforelse
         </tbody>
     </table>

@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AdminSeeder::class);
 
         // Sample event packages so a fresh install has something for clients to
-        // browse and book right away, matching Team U Creation's typical services.
+        // browse and book right away, matching Team U Creations' typical services.
         $packages = [
             [
                 'package_name' => 'Wedding Essentials',
@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
                 'event_type' => 'Corporate Event',
                 'rating' => 5,
                 'title' => 'Flawless product launch',
-                'feedback' => 'Team U Creation ran our product launch without a single hitch. Punctual, communicative, and genuinely cared about getting every detail right.',
+                'feedback' => 'Team U Creations ran our product launch without a single hitch. Punctual, communicative, and genuinely cared about getting every detail right.',
             ],
             [
                 'name' => 'Angela Bautista',

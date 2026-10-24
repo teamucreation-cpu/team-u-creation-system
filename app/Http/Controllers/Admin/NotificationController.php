@@ -13,8 +13,41 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        $notifications = Notification::with('user')->latest()->take(50)->get();
+        $notifications = Auth::user()->appNotifications()->with(['booking', 'appointment'])->latest()->take(50)->get();
         return view('admin.notifications.index', compact('notifications'));
+    }
+
+    public function unreadCount()
+    {
+        return response()->json(['count' => Auth::user()->appNotifications()->where('status', 'unread')->count()]);
+    }
+
+    public function markAllRead()
+    {
+        Auth::user()->appNotifications()->where('status', 'unread')->update(['status' => 'read']);
+
+        return back()->with('success', 'All notifications marked as read.');
+    }
+
+    public function open(int $notification)
+    {
+        $notification = Auth::user()->appNotifications()
+            ->with(['booking', 'appointment'])
+            ->findOrFail($notification);
+
+        if ($notification->status === 'unread') {
+            $notification->update(['status' => 'read']);
+        }
+
+        if ($notification->booking) {
+            return redirect()->route('admin.bookings.show', $notification->booking);
+        }
+
+        if ($notification->appointment) {
+            return redirect()->route('admin.appointments.show', $notification->appointment);
+        }
+
+        return redirect()->route('admin.notifications.index');
     }
 
     public function create()
