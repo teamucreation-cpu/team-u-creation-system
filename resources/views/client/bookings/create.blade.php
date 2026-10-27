@@ -19,16 +19,6 @@
         --be-amber: #ffc107;
         --be-red: #ff6b6b;
         position: relative;
-        /* Fixed to the viewport, flex column, exactly like the Event
-           Calendar page's .evcal-bright (resources/views/client/calendar/
-           index.blade.php) — everything below has to fit inside this one
-           height, on desktop and mobile alike, with no page scroll.
-           74px is the .top-navbar's own real rendered height (measured:
-           1.1rem+0.5rem padding around its 40px avatar row) — the negative
-           margin below cancels .page-content's padding, so this box's top
-           edge lands exactly at the navbar's bottom edge, and subtracting
-           anything more than that just wastes space at the bottom instead
-           of giving it to the calendar. */
         height: calc(100vh - 74px);
         margin: -0.5rem -1.5rem -1.5rem;
         padding: 1rem 1.5rem;
@@ -36,6 +26,12 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
+    }
+    .book-event-lux--calendar {
+        height: auto;
+        min-height: calc(100vh - 130px);
+        padding: 1rem 1.2rem 1.1rem;
+        overflow: visible;
     }
     .book-event-lux::before {
         content: '';
@@ -50,6 +46,7 @@
     }
 
     .be-wrap { position: relative; z-index: 1; width: 100%; max-width: 720px; margin: 0 auto; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .book-event-lux--calendar .be-wrap { max-width: 980px; flex: 1 0 auto; min-height: auto; }
 
     @keyframes beFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
     .be-fade { opacity: 0; animation: beFadeUp 0.55s ease forwards; }
@@ -73,17 +70,15 @@
         display: flex;
         flex-direction: column;
     }
+    .book-event-lux--calendar .be-card { padding: 1rem 1.1rem 0.9rem; flex: 1 0 auto; min-height: auto; }
 
-    /* Both steps fill the card's full height. Step 1 (the calendar) must
-       never need the page to scroll; Step 2 (a plain form) gets its own
-       internal scrollbar as a fallback on a very short viewport, which is
-       fine — only the calendar has a hard no-scroll requirement. */
     #bookingStepCalendar, #bookingStepDetails {
         flex: 1;
         min-height: 0;
         display: flex;
         flex-direction: column;
     }
+    .book-event-lux--calendar #bookingStepCalendar { flex: 0 0 auto; min-height: auto; }
     #bookingStepDetails { overflow-y: auto; }
 
     .be-step-title {
@@ -150,6 +145,7 @@
         display: flex;
         flex-direction: column;
     }
+    .book-event-lux--calendar .be-calendar-pop { flex: 0 0 auto; min-height: auto; }
 
     .be-cal-header { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 1.25rem; margin-bottom: 0.85rem; }
     .be-cal-nav-btn {
@@ -206,17 +202,20 @@
     .be-legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
 
     #calGridView { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .book-event-lux--calendar #calGridView { flex: 0 0 auto; min-height: auto; }
 
-    /* Weekday headers and date cells share one seven-column grid. */
+    /* Keep a natural-height, seven-column grid so every week remains visible. */
     .be-cal-grid {
-        flex: 1;
-        min-height: 0;
+        --be-cell-min-height: 74px;
+        flex: 0 0 auto;
+        min-height: auto;
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        background: transparent;
-        border: 0;
-        border-radius: 0;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        background: #FFFFFF;
+        border: 1px solid rgba(244, 201, 93, 0.35);
+        border-radius: 12px;
         gap: 6px;
+        padding: 8px;
         overflow: visible;
     }
     .be-cal-weekday {
@@ -238,7 +237,9 @@
     .be-day {
         position: relative;
         min-width: 0;
-        min-height: 0;
+        width: 100%;
+        height: 100%;
+        min-height: var(--be-cell-min-height);
         border: 1px solid #D4A017;
         border-radius: 10px;
         background: #FFFFFF;
@@ -323,19 +324,23 @@
     .be-btn-gold:hover:not(:disabled) { background: #ffd873; color: #000; transform: translateY(-2px); box-shadow: 0 10px 26px rgba(244, 201, 93, 0.4); }
     .be-btn-gold:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    /* Mobile — same technique as the Event Calendar's own mobile block:
-       shrink paddings/fonts/nav-button size, but the grid itself keeps
-       "grid-template-columns: repeat(7, 1fr)" no matter what, so it's
-       always a real 7-column calendar, never a stacked list. */
+    @media (max-width: 991.98px) {
+        .be-cal-grid { --be-cell-min-height: 62px; }
+    }
+
     @media (max-width: 575.98px) {
         .book-event-lux { height: calc(100vh - 64px); padding: 0.65rem 0.75rem; margin: -1rem -1rem -1.5rem; }
+        .book-event-lux--calendar { height: auto; min-height: calc(100vh - 118px); overflow: visible; }
         .be-card { padding: 0.85rem 0.9rem; border-radius: 18px; }
+        .book-event-lux--calendar .be-card { padding: 0.85rem 0.9rem; }
         .be-heading-block { margin-bottom: 0.5rem; }
         .be-cal-header { gap: 0.6rem; margin-bottom: 0.5rem; }
         .be-cal-title-btn { min-width: 0; font-size: 0.88rem; padding: 0.2rem 0.5rem; }
         .be-cal-nav-btn { width: 28px; height: 28px; }
         .be-cal-legend { gap: 0.55rem; font-size: 0.6rem; margin-bottom: 0.45rem; }
-        .be-day { font-size: 0.66rem; }
+        .be-cal-grid { --be-cell-min-height: 50px; gap: 4px; padding: 6px; }
+        .be-cal-weekday { font-size: 0.62rem; letter-spacing: 0; }
+        .be-day { font-size: 0.7rem; }
         .be-day--today .be-day-num { font-size: 0.62rem; }
         .be-avail-card { padding: 0.5rem 0.65rem; }
     }
@@ -351,7 +356,7 @@
     // clicking Book an Event".
     $startOnDetails = isset($booking) || $errors->any();
 @endphp
-<div class="book-event-lux">
+<div class="book-event-lux {{ $startOnDetails ? '' : 'book-event-lux--calendar' }}">
     <div class="be-wrap">
         <div class="be-heading-block be-fade" style="animation-delay:.03s;">
             <div class="be-heading-underline"></div>
@@ -517,6 +522,7 @@
     };
     state.cache[state.year + '-' + state.month] = state.availability;
 
+    var bookEvent = document.querySelector('.book-event-lux');
     var stepCalendar = document.getElementById('bookingStepCalendar');
     var stepDetails = document.getElementById('bookingStepDetails');
     var changeDateBtn = document.getElementById('changeDateBtn');
@@ -567,11 +573,13 @@
 
     // ---- Step navigation ----
     function showCalendarStep() {
+        bookEvent.classList.add('book-event-lux--calendar');
         stepDetails.style.display = 'none';
         stepCalendar.style.display = '';
     }
     function showDetailsStep() {
         updateSelectedDateDisplay();
+        bookEvent.classList.remove('book-event-lux--calendar');
         stepCalendar.style.display = 'none';
         stepDetails.style.display = '';
     }
@@ -585,7 +593,7 @@
             setSubmitEnabled(false);
             setAvailState('booked', 'fa-circle-xmark',
                 dateLabel + ' — Already Booked',
-                'This date is already booked for a ' + info.event_type + ' event. Please select another date.');
+                'This date is already booked and cannot be selected. Please choose another available date.');
             return;
         }
 
@@ -595,7 +603,7 @@
             hiddenInput.value = '';
             setSubmitEnabled(false);
             setAvailState('pending', 'fa-hourglass-half',
-                dateLabel + ' — Pending Approval' + (info.event_type ? ' (' + info.event_type + ')' : ''),
+                dateLabel + ' — Pending Approval',
                 'This date currently has a pending reservation and cannot be selected. Please choose another available date.');
             return;
         }
@@ -624,13 +632,10 @@
         var startDow = first.getDay();
         var daysInMonth = new Date(state.year, state.month, 0).getDate();
 
-        // The grid fills a fixed-height area (#calDays is flex:1 inside a
-        // height-constrained column), so every month — 4, 5, or 6 week-rows
-        // — has to divide that same space evenly. "auto" reserves just
-        // enough height for the weekday-label row; the rest is split evenly
-        // across the week rows. Same technique as the Event Calendar page.
+        // Use the same seven-column, natural-height layout as the Event
+        // Calendar while keeping all of the current month's weeks visible.
         var totalRows = Math.ceil((startDow + daysInMonth) / 7);
-        calDays.style.gridTemplateRows = 'auto repeat(' + totalRows + ', 1fr)';
+        calDays.style.gridTemplateRows = 'auto repeat(' + totalRows + ', minmax(var(--be-cell-min-height), auto))';
 
         for (var w = 0; w < 7; w++) {
             var wd = document.createElement('div');
@@ -658,16 +663,13 @@
             cell.type = 'button';
             cell.dataset.date = dateStr;
             var cls = 'be-day';
-            if (isPast) {
-                cls += ' be-day--past';
-            } else {
-                cls += ' be-day--' + status;
-            }
+            if (isPast) { cls += ' be-day--past'; }
+            cls += ' be-day--' + status;
             if (isToday) { cls += ' be-day--today'; }
             if (dateStr === hiddenInput.value) { cls += ' be-day--selected'; }
             cell.className = cls;
 
-            var dot = isPast ? '' : '<span class="be-dot"></span>';
+            var dot = !isPast || info ? '<span class="be-dot"></span>' : '';
             cell.innerHTML = '<span class="be-day-num">' + day + '</span>' + dot;
 
             if (isPast || status === 'booked' || status === 'pending') {
