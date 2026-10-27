@@ -10,6 +10,7 @@ use App\Http\Controllers\ClientPackageController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\AdminBookingController;
 use App\Models\EventPackage;
+use App\Models\BusinessSetting;
 use App\Models\Review;
 
 // Admin Controllers
@@ -57,7 +58,9 @@ Route::get('/', function () {
         'total' => Review::where('status', 'Approved')->count(),
     ];
 
-    return view('welcome', compact('packages', 'approvedReviews', 'reviewStats'));
+    $businessSettings = BusinessSetting::query()->firstOrFail();
+
+    return view('welcome', compact('packages', 'approvedReviews', 'reviewStats', 'businessSettings'));
 });
 
 // Authentication

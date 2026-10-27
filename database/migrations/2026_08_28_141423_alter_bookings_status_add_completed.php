@@ -17,6 +17,10 @@ return new class extends Migration
         // it eligible for the client to leave a review.
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE bookings MODIFY status ENUM('Pending', 'Approved', 'Declined', 'Rescheduled', 'Completed') NOT NULL DEFAULT 'Pending'");
+        } elseif (DB::getDriverName() === 'sqlite') {
+            Schema::table('bookings', function (Blueprint $table) {
+                $table->string('status')->default('Pending')->change();
+            });
         }
     }
 

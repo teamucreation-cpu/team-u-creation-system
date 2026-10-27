@@ -141,15 +141,9 @@
     .be-selected-date-row .chosen { color: #1F2937; font-weight: 600; }
 
     /* ---- Event Booking Calendar (Step 1) ----
-       Restyled to match the Event Calendar page's compact layout
-       (resources/views/client/calendar/index.blade.php): a fixed-height
-       flex column topped by a centered header + legend, then one single
-       bordered grid holding both the weekday labels and the day cells —
-       the same background-shows-through-a-1px-gap trick draws the grid
-       lines with no extra nested "card" around it. Its row template is
-       set in JS on every render() as "auto repeat(N, 1fr)" (N = however
-       many week-rows the month needs), so it always fills exactly the
-       space left after the header/legend, on any screen, with no scroll. */
+       The calendar stays a fixed-height flex column with individually
+       bordered weekday and date cells. Its row template is set in JS on
+       each render so all weeks fit the available calendar space. */
     .be-calendar-pop {
         flex: 1;
         min-height: 0;
@@ -213,26 +207,23 @@
 
     #calGridView { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-    /* Single merged grid — weekday header cells and day cells together
-       (rebuilt every render(), same as the Event Calendar's .calendar-grid):
-       a light-gray background shows through a 1px gap between white cells,
-       drawing thin grid lines with no separate bordered sections. Always
-       7 columns, so it stays a real calendar grid on mobile too — it just
-       shrinks, it never collapses into a list. */
+    /* Weekday headers and date cells share one seven-column grid. */
     .be-cal-grid {
         flex: 1;
         min-height: 0;
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        background: #E5E7EB;
-        border: 1px solid #E5E7EB;
-        border-radius: 14px;
-        gap: 1px;
-        overflow: hidden;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        gap: 6px;
+        overflow: visible;
     }
     .be-cal-weekday {
         background: #FFFFFF;
-        color: #6B7280;
+        border: 1px solid #D4A017;
+        border-radius: 10px;
+        color: #000000;
         font-size: 0.72rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -240,15 +231,18 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0.5rem 0;
+        padding: 0.35rem 0.2rem;
+        min-width: 0;
     }
 
     .be-day {
         position: relative;
+        min-width: 0;
         min-height: 0;
-        border: none;
+        border: 1px solid #D4A017;
+        border-radius: 10px;
         background: #FFFFFF;
-        color: #1F2937;
+        color: #000000;
         font-size: 0.85rem;
         font-weight: 600;
         display: flex;
@@ -256,27 +250,26 @@
         align-items: center;
         justify-content: center;
         gap: 2px;
+        padding: 0.15rem;
         transition: background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
     }
-    .be-day--empty { background: #FCFCFD; cursor: default; }
-    .be-day--past { color: #D1D5DB; background: #FCFCFD; cursor: not-allowed; }
-    .be-day--available:not(:disabled):hover { box-shadow: inset 0 0 0 1.5px #F4C95D; background: #FFFBEF; }
+    .be-day--empty { background: #FFFFFF; cursor: default; }
+    .be-day--past { color: #000000; background: #FFFFFF; cursor: not-allowed; }
+    .be-day--available:not(:disabled):hover { box-shadow: 0 2px 8px rgba(212, 160, 23, 0.18); background: #FFF8E7; }
     /* Pending is a hard stop exactly like Booked — disabled in JS below, so
        no hover feedback here (it would wrongly suggest the date is
        clickable). */
-    .be-day--pending { background: #FFFDF3; cursor: not-allowed; }
-    .be-day--booked { background: #FEF6F6; color: #9CA3AF; cursor: not-allowed; }
-    .be-day--selected { box-shadow: inset 0 0 0 2px #F4C95D !important; background: #FFF8E7 !important; color: #1F2937 !important; font-weight: 800; }
+    .be-day--pending { background: #FFFFFF; cursor: not-allowed; }
+    .be-day--booked { background: #FFFFFF; color: #000000; cursor: not-allowed; }
+    .be-day--selected { border-color: #A97800; box-shadow: inset 0 0 0 1px #A97800 !important; background: #FFF4CC !important; color: #000000 !important; font-weight: 800; }
+    .be-day:focus-visible { outline: 2px solid #D4A017; outline-offset: 1px; background: #FFF8E7; }
     .be-day-num { display: inline-flex; align-items: center; justify-content: center; }
-    .be-day--today .be-day-num {
-        background: #F4C95D; color: #1F2937; border-radius: 50%;
-        width: 26px; height: 26px; font-weight: 800;
-    }
-    .be-day .be-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .be-day--today { background: #FFFFFF; }
+    .be-day--today .be-day-num { color: #000000; font-weight: 800; }
+    .be-day .be-dot { width: 7px; height: 7px; border-radius: 50%; }
     .be-day--available .be-dot { background: #22C55E; }
     .be-day--pending .be-dot { background: #FBBF24; }
     .be-day--booked .be-dot { background: #EF4444; }
-    .be-day--selected .be-dot { background: #D4AF37; }
 
     /* ---- Date Availability panel ---- */
     .be-avail-card {
@@ -343,7 +336,7 @@
         .be-cal-nav-btn { width: 28px; height: 28px; }
         .be-cal-legend { gap: 0.55rem; font-size: 0.6rem; margin-bottom: 0.45rem; }
         .be-day { font-size: 0.66rem; }
-        .be-day--today .be-day-num { width: 17px; height: 17px; font-size: 0.62rem; }
+        .be-day--today .be-day-num { font-size: 0.62rem; }
         .be-avail-card { padding: 0.5rem 0.65rem; }
     }
 </style>
@@ -366,7 +359,7 @@
                 @if(isset($booking))
                     Update your event details — it will need to be reviewed by the admin again.
                 @else
-                    Pick your preferred event date, then tell us about your event — availability updates live.
+                    Choose the date when your event will take place and check its availability before proceeding with your booking.
                 @endif
             </p>
         </div>
@@ -378,7 +371,7 @@
 
             {{-- ============ STEP 1: Event Booking Calendar ============ --}}
             <div id="bookingStepCalendar" style="{{ $startOnDetails ? 'display:none;' : '' }}">
-                <div class="be-step-title"><i class="fas fa-calendar-days"></i> Choose Your Event Date</div>
+                <div class="be-step-title"><i class="fas fa-calendar-days"></i> Select Your Event Date</div>
 
                 <div class="be-calendar-pop" id="calendarPop">
                     <div class="be-cal-header">
@@ -399,11 +392,8 @@
                             <span><span class="be-legend-dot" style="background: #EF4444;"></span> Already Booked</span>
                         </div>
                         {{-- Weekday header cells + day cells are rendered together into
-                             this one grid in JS (render() below) — same single-grid
-                             technique the Event Calendar page uses, so the row template
-                             ("auto" for the header row + N equal rows for the weeks) can
-                             be recomputed on every month change and the whole thing
-                             always exactly fills the space left in the card. --}}
+                             this one grid in JS (render() below), so its month row
+                             template stays responsive as the displayed month changes. --}}
                         <div class="be-cal-grid" id="calDays"></div>
                     </div>
 
@@ -423,11 +413,11 @@
                 </div>
 
                 <div class="be-avail-card" id="availCard">
-                    <div class="be-avail-title"><i class="fas fa-circle-info"></i> Date Availability</div>
+                    <div class="be-avail-title"><i class="fas fa-circle-info"></i> Select an Available Date</div>
                     <div class="be-avail-body">
                         <div class="be-avail-icon" id="availIcon" style="background: rgba(244,201,93,0.1); color: var(--be-gold);"><i class="fas fa-calendar"></i></div>
                         <div id="availTextWrap">
-                            <p class="be-avail-msg" id="availMsg">Select an available date above to continue.</p>
+                            <p class="be-avail-msg" id="availMsg">Select an available date from the calendar to continue with your event booking.</p>
                         </div>
                     </div>
                 </div>
@@ -517,7 +507,7 @@
     // its current date reads as available instead of "booked by itself".
     var excludeBookingId = @json(isset($booking) ? $booking->id : null);
     var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    var weekdayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    var weekdayLabels = ['SU','MO','TU','WE','TH','FR','SA'];
 
     var state = {
         month: {{ $month }},

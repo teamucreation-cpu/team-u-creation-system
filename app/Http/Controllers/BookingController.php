@@ -81,7 +81,7 @@ class BookingController extends Controller
                     // genuinely Available. The Smart Date Selector already
                     // disables Pending/Booked cells client-side; this is the
                     // server-side backstop for the same rule.
-                    $existing = Booking::where('event_date', $value)
+                    $existing = Booking::whereDate('event_date', $value)
                         ->whereIn('status', ['Pending', 'Approved'])
                         ->first();
 
@@ -198,7 +198,7 @@ class BookingController extends Controller
                 function ($attribute, $value, $fail) use ($booking) {
                     // See the identical comment in store() — both Pending and
                     // Approved block, excluding this booking's own current row.
-                    $existing = Booking::where('event_date', $value)
+                    $existing = Booking::whereDate('event_date', $value)
                         ->whereIn('status', ['Pending', 'Approved'])
                         ->where('id', '!=', $booking->id)
                         ->first();

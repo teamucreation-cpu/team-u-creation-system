@@ -22,7 +22,7 @@ class CalendarController extends Controller
         $client = Auth::user()->client;
 
         $appointments = $client->appointments()
-            ->where('status', 'Approved')
+            ->whereIn('status', ['Approved', 'Confirmed'])
             ->whereBetween('appointment_date', [$startOfMonth, $endOfMonth])
             ->get();
 

@@ -9,6 +9,7 @@ use App\Models\InventoryAssignment;
 use App\Models\InventoryItem;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class ReportController extends Controller
@@ -44,7 +45,14 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $period = $request->get('period', 'month');
-        $availableYears = Booking::selectRaw('YEAR(created_at) as year')
+        $yearExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "CAST(strftime('%Y', created_at) AS INTEGER)"
+            : 'YEAR(created_at)';
+        $monthExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "CAST(strftime('%m', created_at) AS INTEGER)"
+            : 'MONTH(created_at)';
+
+        $availableYears = Booking::selectRaw($yearExpression.' as year')
             ->distinct()
             ->pluck('year')
             ->map(fn ($year) => (int) $year)
@@ -69,7 +77,7 @@ class ReportController extends Controller
             ->groupBy('status')
             ->pluck('count', 'status');
 
-        $bookingsByMonth = Booking::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+        $bookingsByMonth = Booking::selectRaw($monthExpression.' as month, COUNT(*) as count')
             ->whereYear('created_at', $reportYear)
             ->groupBy('month')
             ->pluck('count', 'month');

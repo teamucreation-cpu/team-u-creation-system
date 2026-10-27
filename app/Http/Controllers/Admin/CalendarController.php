@@ -22,7 +22,7 @@ class CalendarController extends Controller
         $bookings = Booking::with(['client.user', 'package'])
             ->whereIn('status', ['Approved', 'Pending'])
             ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
-            ->orderByRaw("FIELD(status, 'Approved', 'Pending')")
+            ->orderByRaw("CASE WHEN status = 'Approved' THEN 0 ELSE 1 END")
             ->get();
 
         $availability = Booking::monthAvailability($year, $month);

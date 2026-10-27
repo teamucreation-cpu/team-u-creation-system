@@ -63,7 +63,7 @@ class AdminBookingController extends Controller
             return back()->with('error', 'This booking has already been reviewed.');
         }
 
-        $conflict = Booking::where('event_date', $booking->event_date)
+        $conflict = Booking::whereDate('event_date', $booking->event_date)
             ->where('status', 'Approved')
             ->where('id', '!=', $booking->id)
             ->exists();

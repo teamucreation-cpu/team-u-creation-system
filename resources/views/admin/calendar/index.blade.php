@@ -1,49 +1,53 @@
 @extends('layouts.app')
 
-@section('title', 'Calendar')
-@section('page-title', 'Event Calendar')
+@section('title', 'Calendar of Events')
+@section('page-title', 'Calendar of Events')
 
 @push('styles')
 <style>
     .evcal-bright {
-        --eb-bg: #F8F9FA;
+        --eb-bg: #0A0A0A;
         --eb-white: #FFFFFF;
         --eb-gold: #F4C95D;
-        --eb-gold-dark: #D4AF37;
+        --eb-gold-dark: #D4A017;
         --eb-text: #000000;
         --eb-muted: #000000;
-        --eb-border: #E5E7EB;
+        --eb-border: #D4A017;
         --eb-green: #22C55E;
         --eb-yellow: #FBBF24;
         --eb-red: #EF4444;
         position: relative;
-        height: calc(100vh - 130px);
+        min-height: calc(100vh - 130px);
+        height: auto;
         margin: -0.5rem -1.5rem -1.5rem;
-        padding: 1rem 1.5rem;
+        padding: 1rem 1.2rem 1.1rem;
         background: var(--eb-bg);
+        border: 1px solid var(--eb-gold);
+        border-radius: 16px;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow: visible;
+        box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.2);
     }
 
-    .evcal-wrap { position: relative; flex: 1; min-height: 0; display: flex; max-width: 980px; width: 100%; margin: 0 auto; }
+    .evcal-wrap { position: relative; flex: 1 0 auto; min-height: auto; display: flex; max-width: 980px; width: 100%; margin: 0 auto; }
 
     .evcal-card {
         flex: 1;
-        min-height: 0;
+        min-height: auto;
         display: flex;
         flex-direction: column;
         background: var(--eb-white);
-        border: 1px solid var(--eb-border);
-        border-radius: 20px;
-        padding: 1.25rem 1.75rem;
-        box-shadow: 0 4px 6px rgba(17, 24, 39, 0.04), 0 12px 32px rgba(17, 24, 39, 0.06);
+        border: 1px solid var(--eb-gold);
+        border-radius: 12px;
+        padding: 1rem 1.1rem 0.9rem;
+        box-shadow: none;
     }
 
     .evcal-header { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 1.25rem; margin-bottom: 0.85rem; }
     .evcal-nav-btn {
         width: 40px; height: 40px; border-radius: 50%;
-        background: var(--eb-white); border: 1.5px solid var(--eb-border); color: var(--eb-text);
+        background: var(--eb-white); border: 1.5px solid var(--eb-gold); color: var(--eb-text);
         display: inline-flex; align-items: center; justify-content: center;
         text-decoration: none; transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
         flex: 0 0 auto;
@@ -57,15 +61,21 @@
        rest. Clicking it opens .evcal-myp (see below). */
     .evcal-title-btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-        background: none; border: none; cursor: pointer;
-        color: var(--eb-text); font-weight: 700; font-size: 1.35rem; font-family: inherit;
+        background: transparent; border: none; cursor: pointer;
+        color: #000000; font-weight: 800; font-size: 1.35rem; font-family: inherit;
         margin: 0; min-width: 220px; padding: 0.3rem 0.85rem; border-radius: 10px;
-        transition: background 0.2s ease;
+        transition: background 0.2s ease, color 0.2s ease;
     }
-    .evcal-title-btn:hover, .evcal-title-btn:focus-visible { background: #F3F4F6; outline: none; }
-    .evcal-title-caret { font-size: 0.7rem; color: #9CA3AF; transition: transform 0.2s ease, color 0.2s ease; }
-    .evcal-title-btn:hover .evcal-title-caret, .evcal-title-btn.is-open .evcal-title-caret { color: var(--eb-gold-dark); }
+    .evcal-title-btn:hover, .evcal-title-btn:focus-visible { background: rgba(244, 201, 93, 0.08); outline: none; }
+    .evcal-title-caret { font-size: 0.7rem; color: #000000; transition: transform 0.2s ease, color 0.2s ease; }
+    .evcal-title-btn:hover .evcal-title-caret, .evcal-title-btn.is-open .evcal-title-caret { color: #000000; }
     .evcal-title-btn.is-open .evcal-title-caret { transform: rotate(180deg); }
+
+    .top-navbar h5 {
+        color: #F4C95D !important;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
 
     /* ---- Month & Year picker ----
        Portaled to a direct child of <body> at runtime (see script below),
@@ -123,48 +133,39 @@
     .evcal-legend {
         flex: 0 0 auto;
         display: flex; justify-content: center; gap: 1.75rem; flex-wrap: wrap;
-        margin-bottom: 0.85rem; font-size: 0.85rem; color: var(--eb-muted); font-weight: 500;
+        margin-bottom: 0.85rem; font-size: 0.85rem; color: #000000; font-weight: 600;
     }
     .evcal-legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
-    /* The border is what keeps the "Available / White" swatch visible against
-       the legend's own white background — every other swatch just doesn't
-       need it. */
-    .evcal-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; border: 1px solid var(--eb-border); }
+    .evcal-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; border: 1px solid rgba(0,0,0,0.15); }
 
     .evcal-bright .calendar-grid {
-        flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, 1fr);
-        background: var(--eb-border); border: 1px solid var(--eb-border); border-radius: 14px; gap: 1px; overflow: hidden;
+        flex: 0 0 auto; min-height: auto; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+        background: #FFFFFF; border: 1px solid rgba(244, 201, 93, 0.35); border-radius: 12px; gap: 6px; overflow: visible; padding: 8px;
     }
     .evcal-bright .calendar-header-cell {
-        background: var(--eb-white); color: var(--eb-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;
-        padding: 0.5rem; display: flex; align-items: center; justify-content: center;
+        min-width: 0; background: #FFFFFF; border: 1px solid #D4A017; border-radius: 10px;
+        color: #000000; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        padding: 0.35rem 0.2rem; display: flex; align-items: center; justify-content: center;
     }
 
     .evcal-day-btn {
-        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem;
-        width: 100%; height: 100%; background: var(--eb-white); border: none; color: var(--eb-text);
-        cursor: pointer; transition: background 0.18s ease, box-shadow 0.18s ease; padding: 0.2rem;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.22rem;
+        min-width: 0; width: 100%; height: 100%; min-height: 74px; background: #FFFFFF; border: 1px solid #D4A017;
+        border-radius: 10px; color: #000000;
+        cursor: pointer; transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.18s ease; padding: 0.15rem;
     }
     .evcal-day-btn:disabled { cursor: default; }
-    .evcal-day-btn:not(:disabled):hover { background: #FBFAF6; box-shadow: inset 0 0 0 1.5px var(--eb-gold); }
-    .evcal-day-btn.is-other-month { background: #FCFCFD; color: #D1D5DB; cursor: default; }
+    .evcal-day-btn:not(:disabled):hover { background: #FFF7DA; box-shadow: 0 2px 8px rgba(212, 160, 23, 0.18); border-color: #D4A017; }
+    .evcal-day-btn:focus-visible { background: #FFF7DA; outline: 2px solid #D4A017; outline-offset: 1px; }
+    .evcal-day-btn.is-other-month { background: #FFFFFF; color: #000000; cursor: default; }
     .evcal-day-btn .day-number { font-weight: 600; font-size: 0.85rem; }
-    .evcal-day-btn.is-today .day-number {
-        background: var(--eb-gold); color: #000000; border-radius: 50%;
-        width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: 800;
-    }
+    .evcal-day-btn.is-today { background: #FFF5CF; }
+    .evcal-day-btn.is-today .day-number { font-weight: 800; }
+    .evcal-day-btn .evcal-dot { width: 7px; height: 7px; border: 0; }
+    .evcal-day-btn:not(:disabled):active { background: #FFF4CC; border-color: #A97800; }
 
-    /* The whole rectangle is color-coded by booking status (not just a dot),
-       with the event type printed directly inside it. Pending/Booking each
-       get their own hover shade — at a higher specificity than the plain
-       hover rule above so it wins on colored cells instead of the neutral
-       gold-outline hover. */
-    .evcal-day-btn.status-pending { background: var(--eb-yellow); color: #1F2937; }
-    .evcal-day-btn.status-pending.is-today .day-number { background: #FFFFFF; }
-    .evcal-day-btn.status-pending:not(:disabled):hover { background: #F5A623; box-shadow: none; }
-    .evcal-day-btn.status-booked { background: var(--eb-red); color: #FFFFFF; }
-    .evcal-day-btn.status-booked.is-today .day-number { background: #FFFFFF; color: #B91C1C; }
-    .evcal-day-btn.status-booked:not(:disabled):hover { background: #DC2626; box-shadow: none; }
+    .evcal-day-btn.status-pending .evcal-dot { background: var(--eb-yellow) !important; }
+    .evcal-day-btn.status-booked .evcal-dot { background: var(--eb-red) !important; }
 
     .evcal-day-type {
         max-width: 100%;
@@ -246,7 +247,7 @@
     .evcal-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
     @media (max-width: 575.98px) {
-        .evcal-bright { height: calc(100vh - 118px); padding: 0.65rem 0.6rem; margin: -1rem -1rem -1.5rem; }
+        .evcal-bright { min-height: calc(100vh - 118px); height: auto; padding: 0.65rem 0.6rem; margin: -1rem -1rem -1.5rem; }
         .evcal-card { padding: 0.85rem; border-radius: 16px; }
         .evcal-header { gap: 0.75rem; margin-bottom: 0.6rem; }
         .evcal-title-btn { min-width: 0; font-size: 1.05rem; padding: 0.25rem 0.6rem; }
@@ -288,13 +289,13 @@
             </div>
 
             <div class="evcal-legend">
-                <span><span class="evcal-dot" style="background: var(--eb-white);"></span> Available</span>
-                <span><span class="evcal-dot" style="background: var(--eb-yellow);"></span> Pending</span>
-                <span><span class="evcal-dot" style="background: var(--eb-red);"></span> Booking</span>
+                <span><span class="evcal-dot" style="background: #22C55E;"></span> Available</span>
+                <span><span class="evcal-dot" style="background: #FBBF24;"></span> Pending</span>
+                <span><span class="evcal-dot" style="background: #EF4444;"></span> Already Booked</span>
             </div>
 
-            <div class="calendar-grid" id="evcalGrid" style="grid-template-rows: auto repeat({{ $totalRows }}, 1fr);">
-                @foreach(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $day)
+            <div class="calendar-grid" id="evcalGrid" style="grid-template-rows: auto repeat({{ $totalRows }}, minmax(74px, auto));">
+                @foreach(['SU','MO','TU','WE','TH','FR','SA'] as $day)
                     <div class="calendar-header-cell">{{ $day }}</div>
                 @endforeach
 
@@ -309,6 +310,11 @@
                         $isPast = $dateStr < $today;
                         $info = $availability[$dateStr] ?? null;
                         $status = $info['status'] ?? 'available';
+                        $dotColor = match($status) {
+                            'booked' => 'var(--eb-red)',
+                            'pending' => 'var(--eb-yellow)',
+                            default => 'var(--eb-green)',
+                        };
                         $detail = $eventDetails[$dateStr] ?? null;
                         $hasDetail = $detail !== null;
                         $statusClass = match($status) {
@@ -319,6 +325,9 @@
                     @endphp
                     <button type="button" class="evcal-day-btn {{ $isToday ? 'is-today' : '' }} {{ $hasDetail ? $statusClass : '' }}" {{ $isPast && !$hasDetail ? 'disabled' : '' }} data-date="{{ $dateStr }}">
                         <span class="day-number">{{ $day }}</span>
+                        @if(!$isPast || $hasDetail)
+                            <span class="evcal-dot" style="background: {{ $dotColor }};"></span>
+                        @endif
                         @if($hasDetail)
                             <span class="evcal-day-type" title="{{ $detail['event_type'] }}">{{ $detail['event_type'] }}</span>
                         @endif

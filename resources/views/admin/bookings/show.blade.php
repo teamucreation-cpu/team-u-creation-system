@@ -2,6 +2,24 @@
 
 @section('title', 'Booking Details')
 
+@push('styles')
+<style>
+    .btn-mark-completed,
+    .btn-mark-completed:hover,
+    .btn-mark-completed:focus,
+    .btn-mark-completed:active,
+    .btn-mark-completed:disabled {
+        background-color: #F4C95D;
+        border-color: #F4C95D;
+        color: #000;
+    }
+
+    .btn-mark-completed:disabled {
+        opacity: 1;
+    }
+</style>
+@endpush
+
 @section('content')
 <a href="{{ route('admin.bookings.index') }}" class="btn btn-sm btn-outline-gold mb-3"><i class="fas fa-arrow-left me-1"></i> Back to Bookings</a>
 
@@ -76,7 +94,7 @@
         @if($booking->event_date->isPast() || $booking->event_date->isToday())
             <form method="POST" action="{{ route('admin.bookings.complete', $booking) }}">
                 @csrf
-                <button type="submit" class="btn btn-outline-dark"><i class="fas fa-check-double me-1"></i> Mark Completed</button>
+                <button type="submit" class="btn btn-mark-completed"><i class="fas fa-check-double me-1"></i> Mark Completed</button>
             </form>
         @endif
     @endif

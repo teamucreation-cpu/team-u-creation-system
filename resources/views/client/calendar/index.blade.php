@@ -133,22 +133,26 @@
         min-height: 0;
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        background: var(--eb-border);
-        border: 1px solid var(--eb-border);
-        border-radius: 14px;
-        gap: 1px;
-        overflow: hidden;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        gap: 6px;
+        overflow: visible;
     }
     .evcal-bright .calendar-header-cell {
         background: var(--eb-white);
-        color: var(--eb-muted);
+        border: 1px solid #D4A017;
+        border-radius: 10px;
+        color: var(--eb-text);
         font-size: 0.72rem;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        padding: 0.5rem;
+        padding: 0.35rem 0.2rem;
         display: flex;
         align-items: center;
         justify-content: center;
+        min-width: 0;
     }
     .evcal-day-btn {
         display: flex;
@@ -156,22 +160,26 @@
         align-items: center;
         justify-content: center;
         gap: 0.3rem;
+        min-width: 0;
         width: 100%;
         height: 100%;
         background: var(--eb-white);
-        border: none;
+        border: 1px solid #D4A017;
+        border-radius: 10px;
         color: var(--eb-text);
         cursor: pointer;
         transition: background 0.18s ease, box-shadow 0.18s ease;
+        padding: 0.15rem;
     }
     .evcal-day-btn:disabled { cursor: default; }
-    .evcal-day-btn:not(:disabled):hover { background: #FBFAF6; box-shadow: inset 0 0 0 1.5px var(--eb-gold); }
-    .evcal-day-btn.is-other-month { background: #FCFCFD; color: #D1D5DB; cursor: default; }
+    .evcal-day-btn:not(:disabled):hover { background: #FFF8E7; box-shadow: 0 2px 8px rgba(212, 160, 23, 0.18); }
+    .evcal-day-btn:focus-visible { background: #FFF8E7; outline: 2px solid #D4A017; outline-offset: 1px; }
+    .evcal-day-btn.is-other-month { background: #FFFFFF; color: #000000; cursor: default; }
     .evcal-day-btn .day-number { font-weight: 600; font-size: 0.85rem; }
-    .evcal-day-btn.is-today .day-number {
-        background: var(--eb-gold); color: #000000; border-radius: 50%;
-        width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: 800;
-    }
+    .evcal-day-btn.is-today { background: #FFFFFF; }
+    .evcal-day-btn.is-today .day-number { font-weight: 800; }
+    .evcal-day-btn .evcal-dot { width: 7px; height: 7px; border: 0; }
+    .evcal-day-btn:not(:disabled):active { background: #FFF4CC; border-color: #A97800; }
 
     /* ---- Click-to-view popup ----
        Portaled to a direct child of <body> at runtime (see script below) so
@@ -280,7 +288,7 @@
             </div>
 
             <div class="calendar-grid" id="evcalGrid" style="grid-template-rows: auto repeat({{ $totalRows }}, 1fr);">
-                @foreach(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $day)
+                @foreach(['SU','MO','TU','WE','TH','FR','SA'] as $day)
                     <div class="calendar-header-cell">{{ $day }}</div>
                 @endforeach
 

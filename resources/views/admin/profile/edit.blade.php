@@ -297,6 +297,10 @@
             <p>Manage your profile information.</p>
         </div>
 
+        @if(session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
+        @endif
+
         @if($errors->any())
             <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
         @endif
@@ -402,6 +406,97 @@
                 </div>
             </form>
         </div>
+
+        <div class="as-card as-fade as-fade-3">
+            <div class="as-card-title">Business Contact Information</div>
+
+            <div class="as-detail-grid" id="businessViewDetails">
+                <div class="as-detail-item">
+                    <div class="as-detail-icon"><i class="fas fa-location-dot"></i></div>
+                    <div>
+                        <div class="as-detail-label">Location</div>
+                        <div class="as-detail-value">{{ $businessSettings->location }}</div>
+                    </div>
+                </div>
+                <div class="as-detail-item">
+                    <div class="as-detail-icon"><i class="fas fa-phone"></i></div>
+                    <div>
+                        <div class="as-detail-label">Contact Number</div>
+                        <div class="as-detail-value">{{ $businessSettings->phone }}</div>
+                    </div>
+                </div>
+                <div class="as-detail-item">
+                    <div class="as-detail-icon"><i class="fas fa-envelope"></i></div>
+                    <div>
+                        <div class="as-detail-label">Email Address</div>
+                        <div class="as-detail-value">{{ $businessSettings->email }}</div>
+                    </div>
+                </div>
+                <div class="as-detail-item">
+                    <div class="as-detail-icon"><i class="fab fa-facebook"></i></div>
+                    <div>
+                        <div class="as-detail-label">Facebook Page</div>
+                        <div class="as-detail-value">{{ $businessSettings->facebook_url }}</div>
+                    </div>
+                </div>
+                <div class="as-detail-item">
+                    <div class="as-detail-icon"><i class="fas fa-calendar-days"></i></div>
+                    <div>
+                        <div class="as-detail-label">Business Days</div>
+                        <div class="as-detail-value">{{ $businessSettings->business_days }}</div>
+                    </div>
+                </div>
+                <div class="as-detail-item">
+                    <div class="as-detail-icon"><i class="fas fa-clock"></i></div>
+                    <div>
+                        <div class="as-detail-label">Business Hours</div>
+                        <div class="as-detail-value">
+                            {{ \Carbon\Carbon::createFromFormat('H:i', $businessSettings->opening_time)->format('g:i A') }}
+                            &ndash;
+                            {{ \Carbon\Carbon::createFromFormat('H:i', $businessSettings->closing_time)->format('g:i A') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="as-edit-grid" id="businessEditDetails" style="display: none;">
+                <div class="form-floating as-floating">
+                    <i class="fas fa-location-dot as-field-icon"></i>
+                    <input type="text" class="form-control" id="as-business-location" name="business_location" form="profileForm" placeholder=" " value="{{ old('business_location', $businessSettings->location) }}" required>
+                    <label for="as-business-location">Business Location</label>
+                </div>
+                <div class="form-floating as-floating">
+                    <i class="fas fa-phone as-field-icon"></i>
+                    <input type="text" class="form-control" id="as-business-phone" name="business_phone" form="profileForm" placeholder=" " value="{{ old('business_phone', $businessSettings->phone) }}" required>
+                    <label for="as-business-phone">Business Contact Number</label>
+                </div>
+                <div class="form-floating as-floating">
+                    <i class="fas fa-envelope as-field-icon"></i>
+                    <input type="email" class="form-control" id="as-business-email" name="business_email" form="profileForm" placeholder=" " value="{{ old('business_email', $businessSettings->email) }}" required>
+                    <label for="as-business-email">Business Email Address</label>
+                </div>
+                <div class="form-floating as-floating">
+                    <i class="fab fa-facebook as-field-icon"></i>
+                    <input type="url" class="form-control" id="as-business-facebook-url" name="business_facebook_url" form="profileForm" placeholder=" " value="{{ old('business_facebook_url', $businessSettings->facebook_url) }}" required>
+                    <label for="as-business-facebook-url">Facebook Page Link</label>
+                </div>
+                <div class="form-floating as-floating">
+                    <i class="fas fa-calendar-days as-field-icon"></i>
+                    <input type="text" class="form-control" id="as-business-days" name="business_days" form="profileForm" placeholder=" " value="{{ old('business_days', $businessSettings->business_days) }}" required>
+                    <label for="as-business-days">Business Days</label>
+                </div>
+                <div class="form-floating as-floating">
+                    <i class="fas fa-clock as-field-icon"></i>
+                    <input type="time" class="form-control" id="as-business-opening-time" name="business_opening_time" form="profileForm" placeholder=" " value="{{ old('business_opening_time', $businessSettings->opening_time) }}" required>
+                    <label for="as-business-opening-time">Opening Time</label>
+                </div>
+                <div class="form-floating as-floating">
+                    <i class="fas fa-clock as-field-icon"></i>
+                    <input type="time" class="form-control" id="as-business-closing-time" name="business_closing_time" form="profileForm" placeholder=" " value="{{ old('business_closing_time', $businessSettings->closing_time) }}" required>
+                    <label for="as-business-closing-time">Closing Time</label>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
@@ -416,11 +511,15 @@
         var viewActions = document.querySelector('.as-actions-view');
         var editActions = document.getElementById('editActions');
         var viewDetails = document.getElementById('viewDetails');
+        var businessViewDetails = document.getElementById('businessViewDetails');
+        var businessEditDetails = document.getElementById('businessEditDetails');
 
         function enterEditMode() {
             viewActions.style.display = 'none';
             editActions.style.display = 'flex';
             viewDetails.style.display = 'none';
+            businessViewDetails.style.display = 'none';
+            businessEditDetails.style.display = 'grid';
             form.style.display = 'block';
         }
 
@@ -428,6 +527,8 @@
             viewActions.style.display = 'inline-flex';
             editActions.style.display = 'none';
             viewDetails.style.display = 'grid';
+            businessViewDetails.style.display = 'grid';
+            businessEditDetails.style.display = 'none';
             form.style.display = 'none';
         }
 

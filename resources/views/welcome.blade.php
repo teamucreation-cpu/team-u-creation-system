@@ -580,19 +580,19 @@
                 <ul class="lp-footer-contact-list">
                     <li>
                         <span class="fi-icon"><i class="fas fa-location-dot"></i></span>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Iriga+City,+Camarines+Sur" target="_blank" rel="noopener">Iriga City, Camarines Sur</a>
+                        <a href="https://www.google.com/maps/search/?api=1&amp;query={{ urlencode($businessSettings->location) }}" target="_blank" rel="noopener">{{ $businessSettings->location }}</a>
                     </li>
                     <li>
                         <span class="fi-icon"><i class="fas fa-phone"></i></span>
-                        <a href="tel:+639123456789">+63 912 345 6789</a>
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $businessSettings->phone) }}">{{ $businessSettings->phone }}</a>
                     </li>
                     <li>
                         <span class="fi-icon"><i class="fas fa-envelope"></i></span>
-                        <a href="mailto:teamucreation@gmail.com">teamucreation@gmail.com</a>
+                        <a href="mailto:{{ $businessSettings->email }}">{{ $businessSettings->email }}</a>
                     </li>
                     <li>
                         <span class="fi-icon"><i class="fas fa-globe"></i></span>
-                        <a href="https://www.facebook.com/TEAMUCreations" target="_blank" rel="noopener">facebook.com/TEAMUCreations</a>
+                        <a href="{{ $businessSettings->facebook_url }}" target="_blank" rel="noopener">{{ $businessSettings->facebook_url }}</a>
                     </li>
                 </ul>
             </div>
@@ -603,11 +603,11 @@
                 <ul class="lp-footer-contact-list">
                     <li>
                         <span class="fi-icon"><i class="fas fa-calendar-days"></i></span>
-                        <span class="plain">Monday &ndash; Sunday</span>
+                        <span class="plain">{{ $businessSettings->business_days }}</span>
                     </li>
                     <li>
                         <span class="fi-icon"><i class="fas fa-clock"></i></span>
-                        <span class="plain">8:00 AM &ndash; 8:00 PM</span>
+                        <span class="plain">{{ \Carbon\Carbon::createFromFormat('H:i', $businessSettings->opening_time)->format('g:i A') }} &ndash; {{ \Carbon\Carbon::createFromFormat('H:i', $businessSettings->closing_time)->format('g:i A') }}</span>
                     </li>
                 </ul>
                 <p class="lp-footer-hours-desc">We're here to help you plan your perfect event.</p>

@@ -100,7 +100,7 @@ class Booking extends Model
         }
 
         $rows = $query
-            ->orderByRaw("FIELD(status, 'Approved', 'Pending')")
+            ->orderByRaw("CASE WHEN status = 'Approved' THEN 0 ELSE 1 END")
             ->get(['event_date', 'status', 'event_type']);
 
         $map = [];

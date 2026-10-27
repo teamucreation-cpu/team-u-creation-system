@@ -43,5 +43,30 @@
             @endif
         </div>
     </div>
+    <div class="col-12">
+        <div class="stat-card">
+            <h6 class="fw-bold mb-3">Appointments ({{ $client->appointments->count() }})</h6>
+            @if($client->appointments->isEmpty())
+                <p class="text-muted">No appointments.</p>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Purpose</th><th>Date</th><th>Time</th><th>Status</th><th>Notes</th></tr></thead>
+                        <tbody>
+                            @foreach($client->appointments as $appointment)
+                            <tr>
+                                <td>{{ $appointment->purpose }}</td>
+                                <td>{{ $appointment->appointment_date->format('M d, Y') }}</td>
+                                <td>{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</td>
+                                <td><span class="badge badge-{{ strtolower($appointment->status) }}">{{ $appointment->status }}</span></td>
+                                <td>{{ $appointment->notes ?: '—' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </div>
 </div>
 @endsection

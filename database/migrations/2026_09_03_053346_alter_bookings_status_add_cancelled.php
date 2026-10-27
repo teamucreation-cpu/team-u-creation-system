@@ -17,6 +17,10 @@ return new class extends Migration
         // rejecting it. Keeping them separate preserves who took the action.
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE bookings MODIFY status ENUM('Pending', 'Approved', 'Declined', 'Rescheduled', 'Completed', 'Cancelled') NOT NULL DEFAULT 'Pending'");
+        } elseif (DB::getDriverName() === 'sqlite') {
+            Schema::table('bookings', function (Blueprint $table) {
+                $table->string('status')->default('Pending')->change();
+            });
         }
     }
 
