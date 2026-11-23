@@ -50,8 +50,9 @@ class AppointmentController extends Controller
     public function reschedule(Request $request, Appointment $appointment)
     {
         $validated = $request->validate([
-            'appointment_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:today'],
+            'appointment_date' => ['required', 'date_format:Y-m-d'],
             'appointment_time' => ['required', 'date_format:H:i'],
+            'reason' => ['required', 'string', 'max:2000'],
         ]);
 
         $appointment->refresh();
@@ -61,18 +62,33 @@ class AppointmentController extends Controller
 
         $updatedDate = Carbon::parse($validated['appointment_date'])->toDateString();
         $updatedTime = Carbon::parse($validated['appointment_time'])->format('H:i:s');
+        $timezone = config('app.display_timezone', 'Asia/Manila');
+        $proposedSchedule = Carbon::parse($updatedDate.' '.$updatedTime, $timezone);
+        if ($proposedSchedule->lessThanOrEqualTo(Carbon::now($timezone))) {
+            return back()->withErrors(['appointment_date' => 'Choose a future appointment date and time.'])->withInput();
+        }
+
         $oldDate = $appointment->appointment_date->toDateString();
         $oldTime = Carbon::parse($appointment->appointment_time)->format('H:i:s');
 
         if ($oldDate === $updatedDate && $oldTime === $updatedTime) {
-            return back()->with('error', 'Choose a different appointment date or time to reschedule.');
+            return back()
+                ->withErrors(['appointment_date' => 'Choose a different appointment date or time to reschedule.'])
+                ->withInput();
+        }
+
+        if (Appointment::hasScheduleConflict($updatedDate, $updatedTime, $appointment->id)) {
+            return back()->withErrors(['appointment_time' => 'Another appointment is already scheduled for that date and time.'])->withInput();
         }
 
         $previousSchedule = $appointment->appointment_date->format('F j, Y').' at '.Carbon::parse($appointment->appointment_time)->format('g:i A');
         if (! $this->transition($appointment, ['Pending'], [
-            'appointment_date' => $updatedDate,
-            'appointment_time' => $updatedTime,
-            'status' => 'Rescheduled',
+            'original_appointment_date' => $oldDate,
+            'original_appointment_time' => $oldTime,
+            'proposed_appointment_date' => $updatedDate,
+            'proposed_appointment_time' => $updatedTime,
+            'reschedule_reason' => $validated['reason'],
+            'status' => Appointment::RESCHEDULE_AWAITING_CLIENT,
         ])) {
             return back()->with('error', 'Only pending appointments can be rescheduled.');
         }

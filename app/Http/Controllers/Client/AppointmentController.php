@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Booking;
 use App\Services\NotificationService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AppointmentController extends Controller
 {
@@ -22,6 +24,87 @@ class AppointmentController extends Controller
         $appointment = Auth::user()->client->appointments()->with('booking')->findOrFail($appointment);
 
         return view('client.appointments.show', compact('appointment'));
+    }
+
+    public function confirmReschedule(int $appointment)
+    {
+        $appointment = Auth::user()->client->appointments()->findOrFail($appointment);
+        if ($appointment->status !== Appointment::RESCHEDULE_AWAITING_CLIENT) {
+            return back()->with('error', 'There is no reschedule proposal awaiting your confirmation.');
+        }
+
+        $date = $appointment->proposed_appointment_date?->toDateString();
+        $time = $appointment->proposed_appointment_time;
+        if (! $date || ! $time) {
+            return back()->with('error', 'The proposed appointment schedule is incomplete. Please contact us.');
+        }
+
+        $timezone = config('app.display_timezone', 'Asia/Manila');
+        if (Carbon::parse($date.' '.$time, $timezone)->lessThanOrEqualTo(Carbon::now($timezone))) {
+            return back()->with('error', 'The proposed appointment schedule has passed. Please contact us.');
+        }
+
+        $updated = DB::transaction(function () use ($appointment, $date, $time) {
+            $lockedAppointment = Appointment::query()->lockForUpdate()->findOrFail($appointment->id);
+            if ($lockedAppointment->status !== Appointment::RESCHEDULE_AWAITING_CLIENT) {
+                return false;
+            }
+            if (Appointment::hasScheduleConflict($date, $time, $lockedAppointment->id)) {
+                return false;
+            }
+
+            return Appointment::query()
+                ->whereKey($lockedAppointment->id)
+                ->where('status', Appointment::RESCHEDULE_AWAITING_CLIENT)
+                ->update([
+                    'appointment_date' => $date,
+                    'appointment_time' => $time,
+                    'status' => 'Confirmed',
+                    'reschedule_response' => 'Confirmed',
+                    'reschedule_responded_at' => now(),
+                ]) > 0;
+        });
+
+        if (! $updated) {
+            if ($appointment->fresh()->status !== Appointment::RESCHEDULE_AWAITING_CLIENT) {
+                return back()->with('error', 'There is no reschedule proposal awaiting your confirmation.');
+            }
+
+            return back()->with('error', 'That proposed schedule is no longer available. Please contact us.');
+        }
+
+        $appointment->refresh();
+        app(NotificationService::class)->notifyAdminsAppointmentRescheduleResponse(
+            Auth::user(),
+            $appointment
+        );
+
+        return back()->with('success', 'The proposed appointment schedule has been confirmed.');
+    }
+
+    public function declineReschedule(int $appointment)
+    {
+        $appointment = Auth::user()->client->appointments()->findOrFail($appointment);
+        $updated = Appointment::query()
+            ->whereKey($appointment->id)
+            ->where('status', Appointment::RESCHEDULE_AWAITING_CLIENT)
+            ->update([
+                'status' => 'Declined',
+                'reschedule_response' => 'Declined',
+                'reschedule_responded_at' => now(),
+            ]);
+
+        if (! $updated) {
+            return back()->with('error', 'There is no reschedule proposal awaiting your response.');
+        }
+
+        $appointment->refresh();
+        app(NotificationService::class)->notifyAdminsAppointmentRescheduleResponse(
+            Auth::user(),
+            $appointment
+        );
+
+        return back()->with('success', 'The proposed rescheduled appointment has been declined.');
     }
 
     public function create()

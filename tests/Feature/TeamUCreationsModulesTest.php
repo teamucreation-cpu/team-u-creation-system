@@ -182,6 +182,45 @@ class TeamUCreationsModulesTest extends TestCase
         );
     }
 
+    public function test_booking_requires_a_package_or_custom_event_selection(): void
+    {
+        [$clientUser, $client] = $this->makeClient();
+        $eventDate = now()->addDays(15)->toDateString();
+        $bookingDetails = [
+            'event_type' => 'Birthday Celebration',
+            'venue' => 'Test Venue',
+            'event_date' => $eventDate,
+        ];
+
+        $this->actingAs($clientUser)->from(route('client.bookings.create'))
+            ->post(route('client.bookings.store'), $bookingDetails)
+            ->assertRedirect(route('client.bookings.create'))
+            ->assertSessionHasErrors('package_id');
+        $this->assertDatabaseMissing('bookings', [
+            'client_id' => $client->id,
+            'event_date' => $eventDate,
+        ]);
+
+        $response = $this->actingAs($clientUser)->post(route('client.bookings.store'), [
+            ...$bookingDetails,
+            'package_id' => 'custom',
+        ]);
+
+        $booking = Booking::where('client_id', $client->id)->firstOrFail();
+        $this->assertNull($booking->package_id);
+        $response->assertRedirect(route('client.bookings.show', $booking));
+
+        $unavailable = $this->makePackage('Unavailable Booking Package', false);
+        $this->actingAs($clientUser)->from(route('client.bookings.create'))
+            ->post(route('client.bookings.store'), [
+                ...$bookingDetails,
+                'event_date' => now()->addDays(17)->toDateString(),
+                'package_id' => $unavailable->id,
+            ])
+            ->assertRedirect(route('client.bookings.create'))
+            ->assertSessionHasErrors('package_id');
+    }
+
     public function test_booking_date_conflicts_and_finalized_booking_ownership_are_enforced(): void
     {
         [$clientUser, $client] = $this->makeClient();
@@ -333,6 +372,7 @@ class TeamUCreationsModulesTest extends TestCase
         $this->post(route('admin.appointments.reschedule', $rescheduled), [
             'appointment_date' => $newDate,
             'appointment_time' => '14:15',
+            'reason' => 'The meeting room is unavailable.',
         ]);
         $this->post(route('admin.appointments.complete', $toComplete));
         $this->post(route('admin.appointments.cancel', $toCancel));
@@ -343,14 +383,17 @@ class TeamUCreationsModulesTest extends TestCase
         $this->assertDatabaseHas('appointments', ['id' => $toCancel->id, 'status' => 'Cancelled']);
         $this->assertDatabaseHas('appointments', [
             'id' => $rescheduled->id,
-            'status' => 'Rescheduled',
-            'appointment_date' => $newDate,
-            'appointment_time' => '14:15:00',
+            'status' => \App\Models\Appointment::RESCHEDULE_AWAITING_CLIENT,
+            'proposed_appointment_date' => $newDate,
+            'proposed_appointment_time' => '14:15:00',
+            'reschedule_reason' => 'The meeting room is unavailable.',
         ]);
+        $this->assertSame(now()->addDays(8)->toDateString(), $rescheduled->fresh()->appointment_date->toDateString());
         Mail::assertSent(WorkflowNotificationMail::class, fn (WorkflowNotificationMail $mail) =>
             $mail->hasTo($clientUser->email)
-            && $mail->details['Status'] === 'Rescheduled'
-            && $mail->details['Appointment date'] === \Carbon\Carbon::parse($newDate)->format('F j, Y')
+            && $mail->details['Status'] === \App\Models\Appointment::RESCHEDULE_AWAITING_CLIENT
+            && $mail->details['Proposed appointment date'] === \Carbon\Carbon::parse($newDate)->format('F j, Y')
+            && $mail->details['Reason for rescheduling'] === 'The meeting room is unavailable.'
             && str_contains($mail->actionUrl, '/client/appointments/'.$rescheduled->id)
         );
     }
@@ -390,18 +433,66 @@ class TeamUCreationsModulesTest extends TestCase
         $this->assertNotSame($otherUser->id, $clientUser->id);
     }
 
+    public function test_admin_calendar_retains_completed_bookings_for_historical_lookup(): void
+    {
+        [, $client] = $this->makeClient('Historical Calendar Client');
+        [$admin] = $this->makeAdmin();
+        $eventDate = now()->subYears(2)->setMonth(5)->setDay(12);
+        $completed = $this->makeBooking($client, $eventDate->toDateString(), 'Completed', null, 'Historical Wedding');
+
+        $response = $this->actingAs($admin)->get(route('admin.calendar.index', [
+            'month' => $eventDate->month,
+            'year' => $eventDate->year,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('EVENT COMPLETED')
+            ->assertSee('status-completed')
+            ->assertSee('background: #F4C95D')
+            ->assertViewHas('availability', fn (array $availability) => ! isset($availability[$eventDate->toDateString()]))
+            ->assertViewHas('eventDetails', fn (array $details) =>
+                ($details[$eventDate->toDateString()]['booking_id'] ?? null) === $completed->id
+                && ($details[$eventDate->toDateString()]['status'] ?? null) === 'Completed'
+                && ($details[$eventDate->toDateString()]['event_type'] ?? null) === 'Historical Wedding'
+            );
+    }
+
     public function test_client_packages_and_admin_package_management(): void
     {
         [$clientUser] = $this->makeClient();
         [$admin] = $this->makeAdmin();
         $available = $this->makePackage('Garden Reception', true);
+        $inclusions = ['Planning', 'Venue setup', 'Menu coordination', 'On-site support', 'Lighting', 'Table styling'];
+        $available->update(['inclusions' => implode("\n", $inclusions)]);
         $unavailable = $this->makePackage('Archived Package', false);
 
         $this->actingAs($clientUser)->get(route('client.packages.index'))
             ->assertOk()->assertSee('Garden Reception')->assertDontSee('Archived Package');
         $this->get(route('client.packages.show', $available))->assertOk()->assertSee($available->description);
-        $this->get(route('client.bookings.create', ['package' => $available->id]))
-            ->assertOk()->assertSee($available->package_name);
+        $bookingForm = $this->get(route('client.bookings.create', ['package' => $available->id]));
+        $bookingForm->assertOk()
+            ->assertSee($available->package_name)
+            ->assertSee($available->description)
+            ->assertSee('Planning')
+            ->assertSee('Venue setup')
+            ->assertSee('Menu coordination')
+            ->assertSee('On-site support')
+            ->assertSee('Lighting')
+            ->assertSee('Table styling')
+            ->assertSee('PHP 12,000.00')
+            ->assertSee('No Package – Custom Event')
+            ->assertSee('packageCarousel')
+            ->assertSee('packageCarouselPrevious')
+            ->assertSee('packageCarouselNext')
+            ->assertSee('Select Package')
+            ->assertDontSee('<details', false)
+            ->assertDontSee('View Details')
+            ->assertDontSee($unavailable->package_name)
+            ->assertDontSee('<select class="form-select" name="package_id"', false);
+        $this->assertTrue(
+            strpos($bookingForm->getContent(), $available->package_name)
+            < strpos($bookingForm->getContent(), 'No Package – Custom Event')
+        );
         $this->get(route('client.packages.show', $unavailable))->assertNotFound();
 
         $this->actingAs($admin)->get(route('admin.packages.index'))->assertOk();
@@ -482,8 +573,8 @@ class TeamUCreationsModulesTest extends TestCase
         [$otherUser] = $this->makeClient('Second Client');
         $own = Notification::create([
             'user_id' => $clientUser->id,
-            'message' => 'Own notification',
-            'notification_type' => 'general',
+            'message' => 'Your appointment has been rescheduled. Please review the updated appointment details.',
+            'notification_type' => 'appointment_rescheduled',
             'status' => 'unread',
         ]);
         $foreign = Notification::create([
@@ -494,7 +585,13 @@ class TeamUCreationsModulesTest extends TestCase
         ]);
 
         $this->actingAs($clientUser)->get(route('client.notifications.index'))
-            ->assertOk()->assertSee('Own notification')->assertDontSee('Private notification');
+            ->assertOk()
+            ->assertSee('Your appointment has been rescheduled. Please review the updated appointment details.')
+            ->assertSee(\App\Support\PhilippineTime::format($own->created_at, compact: true))
+            ->assertSee('Mark read')
+            ->assertSee('Delete Notification')
+            ->assertDontSee('appointment_rescheduled')
+            ->assertDontSee('Private notification');
         $this->post(route('client.notifications.read', $own))->assertRedirect();
         $this->assertDatabaseHas('notifications', ['id' => $own->id, 'status' => 'read']);
         $this->post(route('client.notifications.read', $foreign))->assertForbidden();

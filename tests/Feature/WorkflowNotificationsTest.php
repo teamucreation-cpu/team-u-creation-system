@@ -171,11 +171,23 @@ class WorkflowNotificationsTest extends TestCase
         $this->actingAs($admin)->post(route('admin.appointments.reschedule', $rescheduled), [
             'appointment_date' => now()->addDays(8)->toDateString(),
             'appointment_time' => '17:30',
+            'reason' => 'The requested time is no longer available.',
         ])->assertRedirect();
 
         Mail::assertSent(WorkflowNotificationMail::class, fn ($mail) => $mail->subjectLine === 'Appointment Approved – Team U Creations' && $mail->hasTo($clientUser->email));
         Mail::assertSent(WorkflowNotificationMail::class, fn ($mail) => $mail->subjectLine === 'Appointment Declined – Team U Creations' && $mail->hasTo($clientUser->email));
-        Mail::assertSent(WorkflowNotificationMail::class, fn ($mail) => $mail->subjectLine === 'Appointment Rescheduled – Team U Creations' && $mail->hasTo($clientUser->email) && isset($mail->details['Previous schedule']));
+        Mail::assertSent(WorkflowNotificationMail::class, fn ($mail) =>
+            $mail->subjectLine === 'Appointment Rescheduled – Team U Creations'
+            && $mail->hasTo($clientUser->email)
+            && $mail->intro === 'Your appointment with the administrator has been rescheduled. Please review the updated appointment details and confirm or decline the proposed schedule.'
+            && isset($mail->details['Previous schedule'])
+        );
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $clientUser->id,
+            'appointment_id' => $rescheduled->id,
+            'notification_type' => 'appointment_rescheduled',
+            'message' => 'Your appointment with the administrator has been rescheduled. Please review the updated appointment details and confirm or decline the proposed schedule.',
+        ]);
         Mail::assertSentTimes(WorkflowNotificationMail::class, 3);
     }
 
@@ -191,6 +203,7 @@ class WorkflowNotificationsTest extends TestCase
         $this->actingAs($admin)->post(route('admin.appointments.reschedule', $appointment), [
             'appointment_date' => $appointment->appointment_date->toDateString(),
             'appointment_time' => $appointment->appointment_time,
+            'reason' => 'The requested time is no longer available.',
         ])->assertRedirect();
 
         Mail::assertNothingSent();
@@ -232,11 +245,19 @@ class WorkflowNotificationsTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $otherAdmin = User::factory()->create(['role' => 'admin']);
         $booking = $this->createBooking($client);
+        $appointment = $this->createAppointment($client);
         $ownNotification = Notification::create([
             'user_id' => $admin->id,
             'booking_id' => $booking->id,
             'message' => 'New booking request.',
             'notification_type' => 'booking_submitted',
+            'status' => 'unread',
+        ]);
+        $appointmentNotification = Notification::create([
+            'user_id' => $admin->id,
+            'appointment_id' => $appointment->id,
+            'message' => 'New appointment request.',
+            'notification_type' => 'appointment_reschedule_confirmed',
             'status' => 'unread',
         ]);
         Notification::create([
@@ -256,15 +277,37 @@ class WorkflowNotificationsTest extends TestCase
         $this->actingAs($admin)->get(route('admin.notifications.index'))
             ->assertOk()
             ->assertSee('New booking request.')
+            ->assertSee('Appointment')
+            ->assertSee('Booking')
+            ->assertSee('admin-notification-row')
+            ->assertDontSee('booking_submitted')
+            ->assertDontSee('appointment_reschedule_confirmed')
             ->assertDontSee('Client-only notification.')
             ->assertDontSee('Other admin alert.');
 
         $this->actingAs($admin)->post(route('admin.notifications.open', $ownNotification))
             ->assertRedirect(route('admin.bookings.show', $booking));
+        $this->actingAs($admin)->post(route('admin.notifications.open', $appointmentNotification))
+            ->assertRedirect(route('admin.appointments.show', $appointment));
         $this->actingAs($admin)->post(route('admin.notifications.markAllRead'))->assertRedirect();
 
         $this->assertDatabaseHas('notifications', ['id' => $ownNotification->id, 'status' => 'read']);
+        $this->assertDatabaseHas('notifications', ['id' => $appointmentNotification->id, 'status' => 'read']);
         $this->assertDatabaseHas('notifications', ['id' => $otherAdminNotification->id, 'status' => 'unread']);
+
+        $unlinkedAppointmentNotification = Notification::create([
+            'user_id' => $admin->id,
+            'message' => 'An older appointment notification.',
+            'notification_type' => 'appointment_submitted',
+            'status' => 'unread',
+        ]);
+        $this->actingAs($admin)->post(route('admin.notifications.open', $unlinkedAppointmentNotification))
+            ->assertRedirect(route('admin.notifications.index'))
+            ->assertSessionHas('error');
+        $this->assertDatabaseHas('notifications', [
+            'id' => $unlinkedAppointmentNotification->id,
+            'status' => 'read',
+        ]);
     }
 
     public function test_notification_timestamps_are_displayed_in_manila_time(): void

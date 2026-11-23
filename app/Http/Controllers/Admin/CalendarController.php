@@ -17,23 +17,22 @@ class CalendarController extends Controller
         $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
 
-        // Admin sees the full moderation picture — both Approved (booked) and
-        // Pending bookings, not just the confirmed ones.
+        // Completed bookings remain visible for historical calendar lookup,
+        // but the availability map below continues to include active statuses only.
         $bookings = Booking::with(['client.user', 'package'])
-            ->whereIn('status', ['Approved', 'Pending'])
+            ->whereIn('status', ['Approved', 'Pending', 'Completed'])
             ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
-            ->orderByRaw("CASE WHEN status = 'Approved' THEN 0 ELSE 1 END")
+            ->orderByRaw("CASE WHEN status = 'Approved' THEN 0 WHEN status = 'Pending' THEN 1 ELSE 2 END")
             ->get();
 
         $availability = Booking::monthAvailability($year, $month);
 
-        // Full detail per date for the admin's click-to-view popup — the one
-        // calendar allowed to show client identity and take action.
+        // Full detail per date for the admin's click-to-view popup.
         $eventDetails = [];
         foreach ($bookings as $booking) {
             $key = $booking->event_date->format('Y-m-d');
             if (isset($eventDetails[$key])) {
-                continue; // an Approved row for this date was already recorded first
+                continue;
             }
             $eventDetails[$key] = [
                 'booking_id' => $booking->id,

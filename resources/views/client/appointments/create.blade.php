@@ -33,7 +33,7 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Related Booking <small class="text-muted">(optional)</small></label>
+                    <label class="form-label">Related Booking</label>
                     <select class="form-select" name="booking_id">
                         <option value="">None</option>
                         @foreach($bookings as $booking)

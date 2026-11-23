@@ -21,11 +21,12 @@
             <tbody>
                 @foreach($appointments as $appointment)
                 @php($status = $appointment->status === 'Approved' ? 'Confirmed' : $appointment->status)
+                @php($statusBadge = str_contains($status, 'Rescheduled') ? 'rescheduled' : strtolower($status))
                 <tr>
-                    <td>{{ $appointment->appointment_date->format('M d, Y') }}</td>
-                    <td>{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</td>
+                    <td>{{ ($appointment->status === \App\Models\Appointment::RESCHEDULE_AWAITING_CLIENT ? $appointment->proposed_appointment_date : $appointment->appointment_date)->format('M d, Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($appointment->status === \App\Models\Appointment::RESCHEDULE_AWAITING_CLIENT ? $appointment->proposed_appointment_time : $appointment->appointment_time)->format('g:i A') }}</td>
                     <td><strong>{{ $appointment->purpose }}</strong></td>
-                    <td><span class="badge badge-{{ strtolower($status) }}">{{ $status }}</span></td>
+                    <td><span class="badge badge-{{ $statusBadge }}">{{ $status }}</span></td>
                     <td>{{ \App\Support\PhilippineTime::format($appointment->created_at, compact: true) }}</td>
                     <td>{{ \App\Support\PhilippineTime::format($appointment->updated_at, compact: true) }}</td>
                     <td><a href="{{ route('client.appointments.show', $appointment) }}" class="btn btn-sm btn-outline-gold">View Details</a></td>

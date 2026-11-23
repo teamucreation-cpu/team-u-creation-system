@@ -9,7 +9,7 @@
         /* Matches the Request Appointment page's background exactly — that
            page has no background override of its own, so it renders on the
            site-wide navy (--tu-navy, defined on :root in layouts/app.blade.php). */
-        --be-black: var(--tu-navy);
+        --be-black: #0A0A0A;
         --be-charcoal: #121212;
         --be-gold: #F4C95D;
         --be-gold-dim: rgba(244, 201, 93, 0.25);
@@ -33,6 +33,11 @@
         padding: 1rem 1.2rem 1.1rem;
         overflow: visible;
     }
+    .book-event-lux:not(.book-event-lux--calendar) {
+        height: auto;
+        min-height: calc(100vh - 74px);
+        overflow: visible;
+    }
     .book-event-lux::before {
         content: '';
         position: absolute;
@@ -47,6 +52,7 @@
 
     .be-wrap { position: relative; z-index: 1; width: 100%; max-width: 720px; margin: 0 auto; flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .book-event-lux--calendar .be-wrap { max-width: 980px; flex: 1 0 auto; min-height: auto; }
+    .book-event-lux:not(.book-event-lux--calendar) .be-wrap { max-width: 1224px; flex: 1 0 auto; min-height: auto; }
 
     @keyframes beFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
     .be-fade { opacity: 0; animation: beFadeUp 0.55s ease forwards; }
@@ -71,6 +77,7 @@
         flex-direction: column;
     }
     .book-event-lux--calendar .be-card { padding: 1rem 1.1rem 0.9rem; flex: 1 0 auto; min-height: auto; }
+    .book-event-lux:not(.book-event-lux--calendar) .be-card { flex: 0 0 auto; min-height: auto; }
 
     #bookingStepCalendar, #bookingStepDetails {
         flex: 1;
@@ -79,7 +86,8 @@
         flex-direction: column;
     }
     .book-event-lux--calendar #bookingStepCalendar { flex: 0 0 auto; min-height: auto; }
-    #bookingStepDetails { overflow-y: auto; }
+    #bookingStepDetails { overflow: visible; }
+    .book-event-lux:not(.book-event-lux--calendar) #bookingStepDetails { flex: 0 0 auto; min-height: auto; overflow: visible; }
 
     .be-step-title {
         flex: 0 0 auto;
@@ -98,6 +106,60 @@
         margin-bottom: 0.5rem;
     }
     .be-field { margin-bottom: 1.5rem; position: relative; }
+    .be-package-carousel { display: flex; align-items: center; gap: 0.45rem; }
+    .be-package-list {
+        display: flex; flex: 1 1 auto; gap: 0.85rem; min-width: 0;
+        align-items: stretch;
+        overflow-x: auto; overscroll-behavior-x: contain; scroll-behavior: smooth;
+        scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+        padding: 0.2rem 0.15rem 0.75rem;
+        scrollbar-width: none;
+    }
+    .be-package-list::-webkit-scrollbar { display: none; }
+    .be-package-nav {
+        display: inline-flex; flex: 0 0 34px; align-items: center; justify-content: center;
+        width: 34px; height: 34px; border: 1px solid var(--be-gold);
+        border-radius: 50%; background: #121212; color: var(--be-gold);
+        transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    }
+    .be-package-nav:hover:not(:disabled) { background: var(--be-gold); color: #0A0A0A; }
+    .be-package-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+    .be-package-option {
+        display: flex; flex: 0 0 calc(33.333% - 0.57rem); flex-direction: column; align-items: stretch;
+        position: relative;
+        background: #121212;
+        border: 1px solid rgba(244, 201, 93, 0.28);
+        border-radius: 14px;
+        color: #FFFFFF;
+        padding: 1rem 1.1rem;
+        scroll-snap-align: start;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .be-package-option:hover { border-color: rgba(244, 201, 93, 0.7); transform: translateY(-1px); }
+    .be-package-option.is-selected {
+        border-color: var(--be-gold);
+        box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.18), 0 10px 24px rgba(0, 0, 0, 0.16);
+    }
+    .be-package-choice { display: flex; flex: 1 1 auto; align-items: flex-start; gap: 0.8rem; cursor: pointer; }
+    .be-package-radio {
+        width: 1.15rem; height: 1.15rem; flex: 0 0 auto; margin: 0.15rem 0 0;
+        accent-color: var(--be-gold); cursor: pointer;
+    }
+    .be-package-content { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+    .be-package-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
+    .be-package-name { color: #FFFFFF; font-size: 1rem; font-weight: 700; margin: 0; overflow-wrap: anywhere; }
+    .be-package-price { color: var(--be-gold); font-size: 1rem; font-weight: 700; white-space: nowrap; }
+    .be-package-description { color: var(--be-muted); font-size: 0.86rem; margin: 0.45rem 0 0.65rem; overflow-wrap: anywhere; }
+    .be-package-inclusions { color: var(--be-muted); font-size: 0.82rem; margin: 0; padding-left: 1.15rem; overflow-wrap: anywhere; }
+    .be-package-inclusions li + li { margin-top: 0.25rem; }
+    .be-package-action {
+        align-self: flex-start; margin-top: auto; padding: 0.45rem 0.8rem; min-height: 36px;
+        border: 1px solid var(--be-gold); background: transparent; cursor: pointer;
+        border-radius: 8px; color: var(--be-gold); font-size: 0.78rem; font-weight: 700;
+        transition: background 0.2s ease, color 0.2s ease;
+    }
+    .be-package-option.is-selected .be-package-action { background: var(--be-gold); color: #0A0A0A; }
+    .be-package-empty { flex: 0 0 100%; color: #6B7280; font-size: 0.86rem; margin: 0; }
     .be-input-group { position: relative; }
     .be-input-group > i.be-field-icon {
         position: absolute; left: 0.95rem; top: 50%; transform: translateY(-50%);
@@ -326,6 +388,11 @@
 
     @media (max-width: 991.98px) {
         .be-cal-grid { --be-cell-min-height: 62px; }
+        .be-package-option { flex-basis: calc(50% - 0.425rem); }
+    }
+
+    @media (max-width: 767.98px) {
+        .be-package-option { flex-basis: 68%; }
     }
 
     @media (max-width: 575.98px) {
@@ -343,6 +410,11 @@
         .be-day { font-size: 0.7rem; }
         .be-day--today .be-day-num { font-size: 0.62rem; }
         .be-avail-card { padding: 0.5rem 0.65rem; }
+        .be-package-option { padding: 0.85rem; }
+        .be-package-heading { flex-direction: column; gap: 0.2rem; }
+        .be-package-carousel { gap: 0.3rem; }
+        .be-package-nav { flex-basis: 30px; width: 30px; height: 30px; font-size: 0.75rem; }
+        .be-package-option { flex-basis: 88%; }
     }
 </style>
 @endpush
@@ -449,17 +521,69 @@
                     <input type="hidden" name="event_date" id="eventDateInput" value="{{ old('event_date', isset($booking) ? $booking->event_date->format('Y-m-d') : '') }}">
 
                     <div class="be-field">
-                        <label class="form-label">Event Package <span class="text-muted normal-case" style="text-transform:none; font-weight:400;">(optional)</span></label>
-                        <div class="be-input-group">
-                            <i class="fas fa-gift be-field-icon"></i>
-                            <select class="form-select" name="package_id">
-                                <option value="">No package - custom event</option>
-                                @foreach($packages as $package)
-                                    <option value="{{ $package->id }}" {{ old('package_id', $booking->package_id ?? ($selectedPackage->id ?? '')) == $package->id ? 'selected' : '' }}>
-                                        {{ $package->package_name }} - PHP {{ number_format($package->price, 2) }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <label class="form-label">Event Package</label>
+                        @php
+                            $packageSelection = old('package_id', $booking->package_id ?? ($selectedPackage->id ?? 'custom'));
+                        @endphp
+                        <div class="be-package-carousel">
+                            <button type="button" class="be-package-nav" id="packageCarouselPrevious" aria-label="Scroll to previous event packages" aria-controls="packageCarousel" disabled>
+                                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                            </button>
+                            <div class="be-package-list" id="packageCarousel" role="radiogroup" aria-label="Select an event package" tabindex="0">
+                                @forelse($packages as $package)
+                                    @php
+                                        $isSelected = (string) $packageSelection === (string) $package->id;
+                                        $inclusions = collect(preg_split('/[\r\n,]+/', (string) $package->inclusions))
+                                            ->map(fn ($inclusion) => trim($inclusion))
+                                            ->filter()
+                                            ->values();
+                                    @endphp
+                                    <article class="be-package-option {{ $isSelected ? 'is-selected' : '' }}">
+                                        <label class="be-package-choice" for="package-{{ $package->id }}">
+                                            <input class="be-package-radio" type="radio" name="package_id" id="package-{{ $package->id }}" value="{{ $package->id }}" {{ $isSelected ? 'checked' : '' }}>
+                                            <span class="be-package-content">
+                                                <span class="be-package-heading">
+                                                    <span class="be-package-name">{{ $package->package_name }}</span>
+                                                    <span class="be-package-price">PHP {{ number_format($package->price, 2) }}</span>
+                                                </span>
+                                                <span class="be-package-description d-block">{{ $package->description ?: 'A tailored event package from Team U Creation.' }}</span>
+                                                @if($inclusions->isNotEmpty())
+                                                    <ul class="be-package-inclusions">
+                                                        @foreach($inclusions as $inclusion)
+                                                            <li>{{ $inclusion }}</li>
+                                                        @endforeach
+                                                    </ul>
+                                                @else
+                                                    <span class="be-package-description d-block mb-0">No package inclusions are currently listed.</span>
+                                                @endif
+                                            </span>
+                                        </label>
+                                        <button type="button" class="be-package-action" data-package-radio="package-{{ $package->id }}" aria-pressed="{{ $isSelected ? 'true' : 'false' }}">
+                                            {{ $isSelected ? 'Selected' : 'Select Package' }}
+                                        </button>
+                                    </article>
+                                @empty
+                                    <p class="be-package-empty">There are no event packages available right now. You can still book a custom event.</p>
+                                @endforelse
+
+                                <article class="be-package-option {{ $packageSelection === 'custom' ? 'is-selected' : '' }}">
+                                    <label class="be-package-choice" for="package-custom">
+                                        <input class="be-package-radio" type="radio" name="package_id" id="package-custom" value="custom" required {{ $packageSelection === 'custom' ? 'checked' : '' }}>
+                                        <span class="be-package-content">
+                                            <span class="be-package-heading">
+                                                <span class="be-package-name">No Package – Custom Event</span>
+                                            </span>
+                                            <span class="be-package-description d-block">For clients who prefer to customize their event arrangements instead of selecting an existing package.</span>
+                                        </span>
+                                    </label>
+                                    <button type="button" class="be-package-action" data-package-radio="package-custom" aria-pressed="{{ $packageSelection === 'custom' ? 'true' : 'false' }}">
+                                        {{ $packageSelection === 'custom' ? 'Selected' : 'Select Custom Event' }}
+                                    </button>
+                                </article>
+                            </div>
+                            <button type="button" class="be-package-nav" id="packageCarouselNext" aria-label="Scroll to more event packages" aria-controls="packageCarousel">
+                                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -542,6 +666,10 @@
     var availCard = document.getElementById('availCard');
     var availIcon = document.getElementById('availIcon');
     var submitBtn = document.getElementById('submitBtn');
+    var packageRadios = document.querySelectorAll('input[name="package_id"]');
+    var packageCarousel = document.getElementById('packageCarousel');
+    var packageCarouselPrevious = document.getElementById('packageCarouselPrevious');
+    var packageCarouselNext = document.getElementById('packageCarouselNext');
 
     var todayStr = new Date().toISOString().slice(0, 10);
 
@@ -567,6 +695,43 @@
         submitBtn.disabled = !enabled;
     }
 
+    function updatePackageCarouselNavigation() {
+        var maxScroll = packageCarousel.scrollWidth - packageCarousel.clientWidth;
+        packageCarouselPrevious.disabled = packageCarousel.scrollLeft <= 1;
+        packageCarouselNext.disabled = maxScroll <= 1 || packageCarousel.scrollLeft >= maxScroll - 1;
+    }
+
+    packageCarouselPrevious.addEventListener('click', function () {
+        packageCarousel.scrollBy({ left: -packageCarousel.clientWidth * 0.8, behavior: 'smooth' });
+    });
+    packageCarouselNext.addEventListener('click', function () {
+        packageCarousel.scrollBy({ left: packageCarousel.clientWidth * 0.8, behavior: 'smooth' });
+    });
+    packageCarousel.addEventListener('scroll', updatePackageCarouselNavigation);
+    window.addEventListener('resize', updatePackageCarouselNavigation);
+
+    document.querySelectorAll('.be-package-action').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var radio = document.getElementById(button.dataset.packageRadio);
+            if (!radio.checked) { radio.click(); }
+        });
+    });
+
+    packageRadios.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            document.querySelectorAll('.be-package-option').forEach(function (card) {
+                var input = card.querySelector('input[name="package_id"]');
+                var selected = input.checked;
+                card.classList.toggle('is-selected', selected);
+                var button = card.querySelector('.be-package-action');
+                button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                button.textContent = selected
+                    ? 'Selected'
+                    : (input.value === 'custom' ? 'Select Custom Event' : 'Select Package');
+            });
+        });
+    });
+
     function updateSelectedDateDisplay() {
         selectedDateDisplay.textContent = hiddenInput.value ? formatLong(hiddenInput.value) : 'No date selected';
     }
@@ -582,6 +747,7 @@
         bookEvent.classList.remove('book-event-lux--calendar');
         stepCalendar.style.display = 'none';
         stepDetails.style.display = '';
+        window.requestAnimationFrame(updatePackageCarouselNavigation);
     }
     changeDateBtn.addEventListener('click', showCalendarStep);
 
@@ -760,6 +926,7 @@
 
     setSubmitEnabled(!!hiddenInput.value);
     updateSelectedDateDisplay();
+    updatePackageCarouselNavigation();
     render();
 
     // Deep-linked from the Event Calendar's "Book This Date" button. Re-checked

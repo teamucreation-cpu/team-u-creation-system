@@ -25,7 +25,7 @@
                     @csrf
                     <button type="submit" class="btn btn-link text-dark text-decoration-none p-0 text-start"><p class="mb-1">{{ $notif->message }}</p></button>
                 </form>
-                <small class="text-muted"><i class="fas fa-clock me-1"></i>{{ $notif->relative_time }} ({{ \App\Support\PhilippineTime::format($notif->created_at, compact: true) }}) &middot; {{ $notif->notification_type }}</small>
+                <small class="text-muted"><i class="fas fa-clock me-1"></i>{{ $notif->relative_time }} ({{ \App\Support\PhilippineTime::format($notif->created_at, compact: true) }})</small>
             </div>
             <div class="d-flex align-items-center gap-1 flex-shrink-0">
                 @if($notif->status === 'unread')

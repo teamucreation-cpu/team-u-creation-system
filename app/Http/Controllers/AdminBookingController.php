@@ -45,10 +45,12 @@ class AdminBookingController extends Controller
 
     public function show(Booking $booking)
     {
+        $booking->loadMissing(['client.user', 'package', 'review']);
         $conflict = null;
 
         if ($booking->status !== 'Approved') {
-            $conflict = Booking::where('event_date', $booking->event_date)
+            $conflict = Booking::with('client.user')
+                ->whereDate('event_date', $booking->event_date)
                 ->where('status', 'Approved')
                 ->where('id', '!=', $booking->id)
                 ->first();

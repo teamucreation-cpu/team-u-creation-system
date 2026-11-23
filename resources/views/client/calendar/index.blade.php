@@ -179,6 +179,7 @@
     .evcal-day-btn.is-today { background: #FFFFFF; }
     .evcal-day-btn.is-today .day-number { font-weight: 800; }
     .evcal-day-btn .evcal-dot { width: 7px; height: 7px; border: 0; }
+    .evcal-appointment-label { color: #806000; font-size: 0.62rem; font-weight: 700; line-height: 1; }
     .evcal-day-btn:not(:disabled):active { background: #FFF4CC; border-color: #A97800; }
 
     /* ---- Click-to-view popup ----
@@ -308,11 +309,14 @@
                             default => 'var(--eb-green)',
                         };
                     @endphp
-                    <button type="button" class="evcal-day-btn {{ $isToday ? 'is-today' : '' }}" {{ $isPast ? 'disabled' : '' }} data-date="{{ $dateStr }}" data-status="{{ $status }}">
+                    <button type="button" class="evcal-day-btn {{ $isToday ? 'is-today' : '' }}" {{ $isPast ? 'disabled' : '' }} data-date="{{ $dateStr }}" data-status="{{ $status }}" data-appointment="{{ implode(' | ', $appointmentsByDate[$dateStr] ?? []) }}">
                         <span class="day-number">{{ $day }}</span>
                         @unless($isPast)
                             <span class="evcal-dot" style="background: {{ $dotColor }};"></span>
                         @endunless
+                        @if(!empty($appointmentsByDate[$dateStr] ?? []))
+                            <span class="evcal-appointment-label" aria-label="Confirmed appointment">Appointment</span>
+                        @endif
                     </button>
                 @endfor
             </div>
@@ -325,6 +329,7 @@
         <div class="evcal-modal-icon" id="evcalModalIcon"><i class="fas fa-calendar"></i></div>
         <div class="evcal-modal-date" id="evcalModalDate"></div>
         <p class="evcal-modal-msg" id="evcalModalMsg"></p>
+        <p class="evcal-modal-msg" id="evcalModalAppointment" style="display:none;"></p>
         <a href="#" class="evcal-modal-btn" id="evcalModalBtn" style="display:none;"><i class="fas fa-paper-plane"></i> Book This Date</a>
     </div>
 
@@ -362,6 +367,7 @@
     var modalIcon = document.getElementById('evcalModalIcon');
     var modalDate = document.getElementById('evcalModalDate');
     var modalMsg = document.getElementById('evcalModalMsg');
+    var modalAppointment = document.getElementById('evcalModalAppointment');
     var modalBtn = document.getElementById('evcalModalBtn');
 
     document.body.appendChild(backdrop);
@@ -377,11 +383,13 @@
     var closeTimer = null;
     function isOpen() { return modal.classList.contains('is-mounted'); }
 
-    function openModal(dateStr, status) {
+    function openModal(dateStr, status, appointment) {
         if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
 
         modal.className = 'evcal-modal state-' + status;
         modalDate.textContent = formatLong(dateStr);
+        modalAppointment.textContent = appointment ? 'Confirmed appointment: ' + appointment : '';
+        modalAppointment.style.display = appointment ? 'block' : 'none';
 
         if (status === 'booked') {
             modalIcon.innerHTML = '<i class="fas fa-circle-xmark"></i>';
@@ -420,7 +428,7 @@
     grid.addEventListener('click', function (e) {
         var btn = e.target.closest('.evcal-day-btn');
         if (!btn || btn.disabled) { return; }
-        openModal(btn.dataset.date, btn.dataset.status);
+        openModal(btn.dataset.date, btn.dataset.status, btn.dataset.appointment);
     });
 
     closeBtn.addEventListener('click', closeModal);

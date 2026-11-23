@@ -234,7 +234,7 @@ class NotificationService
     {
         $notification = $this->notify(
             $clientUser,
-            'Your appointment has been rescheduled. Please check the updated appointment details.',
+            'Your appointment with the administrator has been rescheduled. Please review the updated appointment details and confirm or decline the proposed schedule.',
             'appointment_rescheduled',
             true,
             $appointment
@@ -246,9 +246,42 @@ class NotificationService
             $clientUser,
             'Appointment Rescheduled – Team U Creations',
             'Appointment Rescheduled',
-            'Your appointment has been moved to a new schedule.',
-            array_merge(['Previous schedule' => $previousSchedule], $this->appointmentDetails($appointment, 'Rescheduled')),
+            'Your appointment with the administrator has been rescheduled. Please review the updated appointment details and confirm or decline the proposed schedule.',
+            array_merge([
+                'Previous schedule' => $previousSchedule,
+                'Proposed appointment date' => $appointment->proposed_appointment_date->format('F j, Y'),
+                'Proposed appointment time' => $this->formatTime($appointment->proposed_appointment_time),
+                'Reason for rescheduling' => $appointment->reschedule_reason,
+            ], $this->appointmentDetails($appointment, Appointment::RESCHEDULE_AWAITING_CLIENT)),
             secure_url(route('client.appointments.show', $appointment, false)),
+            'View Appointment',
+        );
+    }
+
+    public function notifyAdminsAppointmentRescheduleResponse(User $clientUser, Appointment $appointment): void
+    {
+        $confirmed = $appointment->reschedule_response === 'Confirmed';
+        $response = $confirmed ? 'confirmed' : 'declined';
+        $status = $confirmed ? 'Confirmed' : 'Declined';
+        $message = $clientUser->name.' has '.$response.' the proposed rescheduled appointment.';
+
+        $this->notifyAdmins(
+            null,
+            $appointment,
+            $message,
+            'appointment_reschedule_'.$response,
+            'Client Appointment Reschedule '.$status.' – Team U Creations',
+            'Client '.$status.' Rescheduled Appointment',
+            $message,
+            [
+                'Client' => $clientUser->name,
+                'Appointment reference' => '#'.$appointment->id,
+                'Original schedule' => $appointment->original_appointment_date->format('F j, Y').' at '.$this->formatTime($appointment->original_appointment_time),
+                'Proposed schedule' => $appointment->proposed_appointment_date->format('F j, Y').' at '.$this->formatTime($appointment->proposed_appointment_time),
+                'Reason for rescheduling' => $appointment->reschedule_reason,
+                'Client response' => $status,
+            ],
+            secure_url(route('admin.appointments.show', $appointment, false)),
             'View Appointment',
         );
     }

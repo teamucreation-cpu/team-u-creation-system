@@ -7,14 +7,15 @@ use App\Models\EventPackage;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class BookingController extends Controller
 {
     public function create(Request $request)
     {
-        $packages = EventPackage::where('is_available', true)->get();
+        $packages = EventPackage::where('is_available', true)->latest()->get();
         $selectedPackage = $request->filled('package')
-            ? EventPackage::find($request->query('package'))
+            ? EventPackage::where('is_available', true)->find($request->query('package'))
             : null;
 
         // Optional deep-link from the Event Calendar's "Book This Date" button.
@@ -58,7 +59,7 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'package_id' => ['nullable', 'exists:event_packages,id'],
+            'package_id' => $this->packageSelectionRules(),
             'event_type' => ['required', 'string', 'max:255'],
             'venue' => ['required', 'string', 'max:255'],
             'event_date' => [
@@ -96,7 +97,7 @@ class BookingController extends Controller
 
         $booking = Booking::create([
             'client_id' => Auth::user()->client->id,
-            'package_id' => $validated['package_id'] ?? null,
+            'package_id' => $validated['package_id'] === 'custom' ? null : $validated['package_id'],
             'event_type' => $validated['event_type'],
             'venue' => $validated['venue'],
             'event_date' => $validated['event_date'],
@@ -155,7 +156,7 @@ class BookingController extends Controller
                 ->with('error', 'This booking has already been reviewed and can no longer be edited.');
         }
 
-        $packages = EventPackage::where('is_available', true)->get();
+        $packages = EventPackage::where('is_available', true)->latest()->get();
         $selectedPackage = null;
         $prefillDate = null;
 
@@ -178,7 +179,7 @@ class BookingController extends Controller
         }
 
         $validated = $request->validate([
-            'package_id' => ['nullable', 'exists:event_packages,id'],
+            'package_id' => $this->packageSelectionRules(),
             'event_type' => ['required', 'string', 'max:255'],
             'venue' => ['required', 'string', 'max:255'],
             'event_date' => [
@@ -219,7 +220,7 @@ class BookingController extends Controller
             ->whereKey($booking->getKey())
             ->where('status', 'Pending')
             ->update([
-            'package_id' => $validated['package_id'] ?? null,
+            'package_id' => $validated['package_id'] === 'custom' ? null : $validated['package_id'],
             'event_type' => $validated['event_type'],
             'venue' => $validated['venue'],
             'event_date' => $validated['event_date'],
@@ -262,5 +263,16 @@ class BookingController extends Controller
         if ($booking->client_id !== Auth::user()->client->id) {
             abort(403);
         }
+    }
+
+    private function packageSelectionRules(): array
+    {
+        $availablePackageIds = EventPackage::where('is_available', true)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->push('custom')
+            ->all();
+
+        return ['required', Rule::in($availablePackageIds)];
     }
 }

@@ -1,11 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'Remind Clients')
-@section('page-title', 'Remind Clients')
+@section('title', 'Notifications')
+@section('page-title', 'Notifications')
+
+@push('styles')
+<style>
+    .admin-notification-row { cursor: pointer; transition: background-color 0.18s ease; }
+    .admin-notification-row:hover > td { background-color: rgba(244, 201, 93, 0.12); }
+    .admin-notification-row:focus-visible { outline: 2px solid #F4C95D; outline-offset: -2px; }
+    .notification-type-badge { background: #121212; border: 1px solid #F4C95D; color: #F4C95D; }
+</style>
+@endpush
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h5 class="mb-0">My Notifications</h5>
+    <h5 class="mb-0">Notifications</h5>
     <div class="d-flex align-items-center gap-2">
         <form method="POST" action="{{ route('admin.notifications.markAllRead') }}">
             @csrf
@@ -20,14 +29,27 @@
         <thead><tr><th>Message</th><th>Type</th><th>Status</th><th>Sent</th><th></th></tr></thead>
         <tbody>
             @forelse($notifications as $n)
-            <tr>
+            @php
+                if ($n->appointment_id !== null || $n->appointment) {
+                    $typeLabel = 'Appointment';
+                } elseif ($n->booking_id !== null || $n->booking) {
+                    $typeLabel = 'Booking';
+                } elseif (\Illuminate\Support\Str::startsWith($n->notification_type, 'appointment')) {
+                    $typeLabel = 'Appointment';
+                } elseif (\Illuminate\Support\Str::startsWith($n->notification_type, 'booking')) {
+                    $typeLabel = 'Booking';
+                } else {
+                    $typeLabel = 'General';
+                }
+            @endphp
+            <tr class="admin-notification-row" tabindex="0" aria-label="Open {{ $typeLabel }} notification: {{ $n->message }}">
                 <td>
-                    <form method="POST" action="{{ route('admin.notifications.open', $n) }}">
+                    <form method="POST" action="{{ route('admin.notifications.open', $n) }}" class="notification-open-form">
                         @csrf
                         <button type="submit" class="btn btn-link text-dark text-decoration-none p-0 text-start">{{ Str::limit($n->message, 90) }}</button>
                     </form>
                 </td>
-                <td><span class="badge bg-secondary">{{ $n->notification_type }}</span></td>
+                <td><span class="badge notification-type-badge">{{ $typeLabel }}</span></td>
                 <td>
                     @if($n->status === 'unread')
                         <span class="badge badge-pending">Unread</span>
@@ -59,3 +81,31 @@
     </table>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.querySelectorAll('.admin-notification-row').forEach(function (row) {
+    function isInteractiveTarget(target) {
+        return target.closest('button, a, form, .dropdown') !== null;
+    }
+
+    function openNotification() {
+        row.querySelector('.notification-open-form').submit();
+    }
+
+    row.addEventListener('click', function (event) {
+        if (!isInteractiveTarget(event.target)) {
+            openNotification();
+        }
+    });
+
+    row.addEventListener('keydown', function (event) {
+        if (isInteractiveTarget(event.target)) { return; }
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openNotification();
+        }
+    });
+});
+</script>
+@endpush

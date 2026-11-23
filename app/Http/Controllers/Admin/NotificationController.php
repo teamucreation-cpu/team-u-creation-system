@@ -39,15 +39,36 @@ class NotificationController extends Controller
             $notification->update(['status' => 'read']);
         }
 
-        if ($notification->booking) {
-            return redirect()->route('admin.bookings.show', $notification->booking);
+        if ($notification->appointment_id !== null || $notification->appointment) {
+            if ($notification->appointment) {
+                return redirect()->route('admin.appointments.show', $notification->appointment);
+            }
+
+            return redirect()->route('admin.notifications.index')
+                ->with('error', 'The appointment associated with this notification is no longer available.');
         }
 
-        if ($notification->appointment) {
-            return redirect()->route('admin.appointments.show', $notification->appointment);
+        if ($notification->booking_id !== null || $notification->booking) {
+            if ($notification->booking) {
+                return redirect()->route('admin.bookings.show', $notification->booking);
+            }
+
+            return redirect()->route('admin.notifications.index')
+                ->with('error', 'The booking associated with this notification is no longer available.');
         }
 
-        return redirect()->route('admin.notifications.index');
+        if (\Illuminate\Support\Str::startsWith($notification->notification_type, 'appointment')) {
+            return redirect()->route('admin.notifications.index')
+                ->with('error', 'The appointment associated with this notification is no longer available.');
+        }
+
+        if (\Illuminate\Support\Str::startsWith($notification->notification_type, 'booking')) {
+            return redirect()->route('admin.notifications.index')
+                ->with('error', 'The booking associated with this notification is no longer available.');
+        }
+
+        return redirect()->route('admin.notifications.index')
+            ->with('error', 'This notification is not linked to an appointment or booking.');
     }
 
     public function create()

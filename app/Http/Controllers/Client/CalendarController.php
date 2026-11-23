@@ -24,7 +24,12 @@ class CalendarController extends Controller
         $appointments = $client->appointments()
             ->whereIn('status', ['Approved', 'Confirmed'])
             ->whereBetween('appointment_date', [$startOfMonth, $endOfMonth])
-            ->get();
+            ->get(['appointment_date', 'appointment_time', 'purpose']);
+        $appointmentsByDate = [];
+        foreach ($appointments as $appointment) {
+            $date = $appointment->appointment_date->format('Y-m-d');
+            $appointmentsByDate[$date][] = Carbon::parse($appointment->appointment_time)->format('g:i A').' – '.$appointment->purpose;
+        }
 
         // Status only — deliberately not event type, package, or anyone's
         // identity. This calendar must never reveal another client's booking
@@ -33,6 +38,6 @@ class CalendarController extends Controller
             ->map(fn ($info) => $info['status'])
             ->all();
 
-        return view('client.calendar.index', compact('appointments', 'month', 'year', 'startOfMonth', 'endOfMonth', 'statusMap'));
+        return view('client.calendar.index', compact('appointments', 'appointmentsByDate', 'month', 'year', 'startOfMonth', 'endOfMonth', 'statusMap'));
     }
 }

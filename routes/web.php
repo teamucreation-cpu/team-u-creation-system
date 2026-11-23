@@ -105,6 +105,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/appointments/create', [ClientAppointmentController::class, 'create'])->name('appointments.create');
         Route::get('/appointments/{appointment}', [ClientAppointmentController::class, 'show'])->name('appointments.show');
         Route::post('/appointments', [ClientAppointmentController::class, 'store'])->name('appointments.store');
+        Route::post('/appointments/{appointment}/reschedule/confirm', [ClientAppointmentController::class, 'confirmReschedule'])->name('appointments.reschedule.confirm');
+        Route::post('/appointments/{appointment}/reschedule/decline', [ClientAppointmentController::class, 'declineReschedule'])->name('appointments.reschedule.decline');
 
         // Calendar
         Route::get('/calendar', [ClientCalendarController::class, 'index'])->name('calendar.index');

@@ -166,6 +166,19 @@
 
     .evcal-day-btn.status-pending .evcal-dot { background: var(--eb-yellow) !important; }
     .evcal-day-btn.status-booked .evcal-dot { background: var(--eb-red) !important; }
+    .evcal-day-btn.status-completed,
+    .evcal-day-btn.status-completed.is-today,
+    .evcal-day-btn.status-completed:not(:disabled):hover,
+    .evcal-day-btn.status-completed:focus-visible,
+    .evcal-day-btn.status-completed:not(:disabled):active {
+        background: #F4C95D;
+        border-color: #D4A017;
+        color: #000000;
+    }
+    .evcal-day-btn.status-completed .day-number,
+    .evcal-day-btn.status-completed .evcal-day-type {
+        color: #000000;
+    }
 
     .evcal-day-type {
         max-width: 100%;
@@ -226,6 +239,7 @@
     }
     .evcal-modal-status.st-pending { background-color: #FEF3C7; color: #92610A; }
     .evcal-modal-status.st-approved { background-color: #FEE2E2; color: #B91C1C; }
+    .evcal-modal-status.st-completed { background-color: #FEF3C7; color: #806000; }
 
     .evcal-modal-row { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.85rem; padding: 0.55rem 0; border-top: 1px solid #E5E7EB; }
     .evcal-modal-row:first-of-type { border-top: none; }
@@ -310,18 +324,20 @@
                         $isPast = $dateStr < $today;
                         $info = $availability[$dateStr] ?? null;
                         $status = $info['status'] ?? 'available';
+                        $detail = $eventDetails[$dateStr] ?? null;
+                        $hasDetail = $detail !== null;
+                        $isCompleted = ($detail['status'] ?? null) === 'Completed';
                         $dotColor = match($status) {
                             'booked' => 'var(--eb-red)',
                             'pending' => 'var(--eb-yellow)',
-                            default => 'var(--eb-green)',
+                            default => $isCompleted ? 'var(--eb-yellow)' : 'var(--eb-green)',
                         };
-                        $detail = $eventDetails[$dateStr] ?? null;
-                        $hasDetail = $detail !== null;
                         $statusClass = match($status) {
                             'booked' => 'status-booked',
                             'pending' => 'status-pending',
-                            default => '',
+                            default => $isCompleted ? 'status-completed' : '',
                         };
+                        $eventLabel = $isCompleted ? 'EVENT COMPLETED' : ($detail['event_type'] ?? '');
                     @endphp
                     <button type="button" class="evcal-day-btn {{ $isToday ? 'is-today' : '' }} {{ $hasDetail ? $statusClass : '' }}" {{ $isPast && !$hasDetail ? 'disabled' : '' }} data-date="{{ $dateStr }}">
                         <span class="day-number">{{ $day }}</span>
@@ -329,7 +345,7 @@
                             <span class="evcal-dot" style="background: {{ $dotColor }};"></span>
                         @endif
                         @if($hasDetail)
-                            <span class="evcal-day-type" title="{{ $detail['event_type'] }}">{{ $detail['event_type'] }}</span>
+                            <span class="evcal-day-type" title="{{ $eventLabel }}">{{ $eventLabel }}</span>
                         @endif
                     </button>
                 @endfor
@@ -397,10 +413,11 @@
 
     function renderModal(dateStr, info) {
         var isPending = info.status === 'Pending';
+        var isCompleted = info.status === 'Completed';
         var html = ''
             + '<div class="evcal-modal-title">' + esc(info.event_type) + '</div>'
             + '<div class="evcal-modal-date">' + formatLong(dateStr) + '</div>'
-            + '<span class="evcal-modal-status ' + (isPending ? 'st-pending' : 'st-approved') + '">' + (isPending ? 'Pending Approval' : 'Approved / Booked') + '</span>'
+            + '<span class="evcal-modal-status ' + (isCompleted ? 'st-completed' : (isPending ? 'st-pending' : 'st-approved')) + '">' + (isCompleted ? 'Event Completed' : (isPending ? 'Pending Approval' : 'Approved / Booked')) + '</span>'
             + '<div class="evcal-modal-row"><span class="label">Client</span><span class="value">' + esc(info.client_name) + '</span></div>'
             + '<div class="evcal-modal-row"><span class="label">Contact No.</span><span class="value">' + esc(info.phone) + '</span></div>'
             + '<div class="evcal-modal-row"><span class="label">Location</span><span class="value">' + esc(info.venue) + '</span></div>'
